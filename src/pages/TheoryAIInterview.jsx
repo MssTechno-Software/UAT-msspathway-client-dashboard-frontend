@@ -113,7 +113,22 @@ function TheoryAIInterview() {
         resetTranscript();
         setTimeLeft(119);
 
-        // Only change which question is displayed
+        const updatedQuestions = [...questions];
+
+        updatedQuestions.forEach((q) => {
+            if (q.attempted_status === "current") {
+                q.attempted_status = "pending";
+            }
+        });
+
+        if (
+            updatedQuestions[index].attempted_status !== "completed" &&
+            updatedQuestions[index].attempted_status !== "skipped"
+        ) {
+            updatedQuestions[index].attempted_status = "current";
+        }
+
+        setQuestions(updatedQuestions);
         setCurrentQuestionIndex(index);
     };
 

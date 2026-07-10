@@ -124,7 +124,24 @@ function ScheduledAIInterview() {
         resetTranscript();
         setTimeLeft(119);
 
-        // Only change which question is displayed
+        const updatedQuestions = [...questions];
+
+        // Remove the current status from the old question
+        updatedQuestions.forEach((question) => {
+            if (question.attempted_status === "current") {
+                question.attempted_status = "pending";
+            }
+        });
+
+        // Make the selected question current
+        if (
+            updatedQuestions[index].attempted_status !== "completed" &&
+            updatedQuestions[index].attempted_status !== "skipped"
+        ) {
+            updatedQuestions[index].attempted_status = "current";
+        }
+
+        setQuestions(updatedQuestions);
         setCurrentQuestionIndex(index);
     };
 
@@ -188,8 +205,16 @@ function ScheduledAIInterview() {
 
         updatedQuestions[currentQuestionIndex].attempted_status = "completed";
 
-        if (currentQuestionIndex < updatedQuestions.length - 1) {
-            updatedQuestions[currentQuestionIndex + 1].attempted_status = "current";
+        const nextIndex = updatedQuestions.findIndex(
+            (q, i) =>
+                i > currentQuestionIndex &&
+                q.attempted_status !== "completed" &&
+                q.attempted_status !== "skipped"
+        );
+
+        if (nextIndex !== -1) {
+            updatedQuestions[nextIndex].attempted_status = "current";
+            setCurrentQuestionIndex(nextIndex);
         }
 
         setQuestions(updatedQuestions);
@@ -215,15 +240,19 @@ function ScheduledAIInterview() {
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
 
-        if (currentQuestionIndex < updatedQuestions.length - 1) {
-            updatedQuestions[currentQuestionIndex + 1].attempted_status = "current";
+        const nextIndex = updatedQuestions.findIndex(
+            (q, i) =>
+                i > currentQuestionIndex &&
+                q.attempted_status !== "completed" &&
+                q.attempted_status !== "skipped"
+        );
+
+        if (nextIndex !== -1) {
+            updatedQuestions[nextIndex].attempted_status = "current";
+            setCurrentQuestionIndex(nextIndex);
         }
 
         setQuestions(updatedQuestions);
-
-        if (currentQuestionIndex < updatedQuestions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-        }
     };
 
     const handleFinishInterview = async () => {

@@ -48,7 +48,7 @@ function ScheduledInterviewFeedback({ data = null }) {
     const circleRadius = 58;
     const circleCircumference = 2 * Math.PI * circleRadius;
     const scorePercent = Math.min(
-        Math.max(scorecard?.performance_score || 0, 0),
+        Math.max(scorecard?.percentage || 0, 0),
         100
     );
     const strokeDashoffset = circleCircumference - (scorePercent / 100) * circleCircumference;
@@ -106,9 +106,10 @@ function ScheduledInterviewFeedback({ data = null }) {
     };
 
     // Find active question detail
-    const question = scorecard?.questions_detail?.find(
-        q => q.question_number === selectedQuestionId
-    );
+    const question =
+        scorecard.question_stepper.find(
+            q => q.question_number === selectedQuestionId
+        );
 
     return (
         <div className="w-full min-h-screen bg-[#f8f9fa] text-[#212529] ">
@@ -156,93 +157,85 @@ function ScheduledInterviewFeedback({ data = null }) {
                     </span>
                 </div>
             </div>
-            <div className="border border-gray-300 p-4 mb-6">
-                {/* Question Stepper */}
-                <div className="px-4 sm:px-6 lg:px-12 mt-6">
-                    <div className="bg-white border border-[#e7dbd6] rounded-xl px-5 py-4 shadow-sm">
-
-                        <div className="flex items-center">
-
-                            {/* Previous */}
-                            <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-[#6b5f5b] hover:bg-gray-100 transition cursor-pointer"
-                            >
-                                &#8249;
-                            </button>
-
-                            {/* Steps */}
-                            <div className="flex-1 flex items-center px-3">
-
-                                {questions?.map((_, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center flex-1 last:flex-none"
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => handleStepClick(index + 1)}
-                                            className={`
-                                                        relative z-10
-                                                        w-7.5 h-7.5 rounded-xl
-                                                        flex items-center justify-center
-                                                        text-xs font-semibold
-                                                        transition-all duration-300
-                                                        cursor-pointer
-                                                        ${questions[index]?.attempted_status === "completed"
-                                                    ? "bg-[#3b6934] text-white"
-                                                    : questions[index]?.attempted_status === "current"
-                                                        ? "bg-green-100 border-2 border-[#3b6934] text-[#3b6934]"
-                                                        : questions[index]?.attempted_status === "skipped"
-                                                            ? "bg-red-100 border-2 border-red-500 text-red-500"
-                                                            : "bg-white border border-[#dddddd] text-[#bcbcbc]"
-                                                }
-                                                        `}
-                                        >
-                                            {index + 1}
-                                            {questions[index]?.attempted_status === "completed" && (
-                                                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white border-2 border-[#3b6934] flex items-center justify-center shadow-sm">
-                                                    <Check
-                                                        size={10}
-                                                        strokeWidth={3}
-                                                        className="text-[#3b6934]"
-                                                    />
-                                                </div>
-                                            )}
-                                        </button>
-
-                                        {index !== questions.length - 1 && (
-                                            <div className="flex-1 px-3">
-                                                <div className="relative h-0.5 bg-[#ececec]">
-                                                    <div
-                                                        className={`absolute left-0 top-0 h-full transition-all duration-300 ${index < currentQuestionIndex
-                                                            ? "w-full bg-[#97b78c]"
-                                                            : "w-0"
-                                                            }`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-
-                            </div>
-
-                            {/* Next */}
-                            <button
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-[#756965] hover:bg-gray-100 disabled:opacity-40"
-                            >
-                                &#8250;
-                            </button>
-
-                        </div>
-
-                    </div>
-                </div>
-            </div>
 
             {/* Main content  */}
             <main className="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6">
+                {/*  Dynamic Question Stepper */}
+                <div className="w-full bg-white border border-[#dee2e6] p-4 rounded-xl shadow-sm mb-6 flex items-center justify-between">
+                    <button
+                        onClick={handlePrevStep}
+                        disabled={selectedQuestionId === 1 && viewMode === 'question'}
+                        className={`transition-colors ${selectedQuestionId === 1 && viewMode === 'question' ? 'text-[#dee2e6] cursor-not-allowed' : 'text-[#adb5bd] hover:text-[#2d5a27]'}`}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
 
+                    <div className="flex-1 flex items-center justify-center gap-3 md:gap-4 overflow-x-auto py-1">
+                        {scorecard?.question_stepper?.map((step, idx) => {
+                            const isSelected =
+                                step.question_number === selectedQuestionId &&
+                                viewMode === "question";
+                            const isCompleted = step.question_status === "completed";
+                            const isSkipped = step.question_status === "skipped";
+
+                            return (
+                                <React.Fragment key={step.question_number}>
+                                    <button
+                                        onClick={() => handleStepClick(step.question_number)}
+                                        className="relative cursor-pointer shrink-0 focus:outline-none"
+                                    >
+                                        {/* Selected State: White circle with green border */}
+                                        {isSelected ? (
+                                            <div className="w-8 h-8 rounded-full border-2 border-[#2d5a27] bg-white flex items-center justify-center text-[#2d5a27] text-sm font-bold">
+                                                {step.question_number}
+                                            </div>
+                                        ) : isCompleted ? (
+                                            /* Completed State: Green circle with completed icon */
+                                            <>
+                                                <div className="w-8 h-8 rounded-full bg-[#2d5a27] flex items-center justify-center text-white text-sm font-bold">
+                                                    {step.question_number}
+                                                </div>
+                                                <div className="absolute -top-1 -right-1 bg-white rounded-full">
+                                                    <CheckCircle2 className="w-4 h-4 text-[#2d5a27] fill-white" />
+                                                </div>
+                                            </>
+                                        ) : isSkipped ? (
+                                            /* Skipped State: Gray circle with skipped state badge */
+                                            <>
+                                                <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-400 flex items-center justify-center text-gray-600 text-sm font-bold">
+                                                    {step.question_number}
+                                                </div>
+                                                <div className="absolute -top-1 -right-1 bg-white rounded-full border border-gray-300 w-4 h-4 flex items-center justify-center text-[10px] text-gray-500 font-bold leading-none">
+                                                    -
+                                                </div>
+                                            </>
+                                        ) : (
+                                            /* Not Answered / Upcoming State: Default gray circle */
+                                            <div className="w-8 h-8 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 text-sm font-bold">
+                                                {step.question_number}
+                                            </div>
+                                        )}
+                                    </button>
+                                    {idx < (scorecard?.question_stepper?.length || 0) - 1 && (
+                                        <div className="h-px w-6 md:w-8 bg-gray-200 shrink-0" />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+
+                    <button
+                        onClick={handleNextStep}
+                        disabled={selectedQuestionId === (scorecard?.question_stepper?.length || 0)}
+                        className={`transition-colors ${selectedQuestionId === (scorecard?.question_stepper?.length || 0) &&
+                            viewMode === "question"
+                            ? "text-[#dee2e6] cursor-not-allowed"
+                            : "text-[#adb5bd] hover:text-[#2d5a27]"
+                            }`}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
                 {/* Switchable Views */}
                 {viewMode === 'overall' ? (
 
@@ -283,7 +276,7 @@ function ScheduledInterviewFeedback({ data = null }) {
                                             strokeWidth="8"
                                         />
                                     </svg>
-                                    <span className="absolute text-[48px] leading-14 font-bold text-white">{scorecard?.performance_score}</span>
+                                    <span className="absolute text-[48px] leading-14 font-bold text-white">{scorecard?.final_score}</span>
                                 </div>
                             </section>
 
@@ -400,7 +393,7 @@ function ScheduledInterviewFeedback({ data = null }) {
                                             Executive Summary
                                         </h5>
                                         <p className="text-[#212529] text-[15px] leading-relaxed">
-                                            {scorecard.executive_summary}
+                                            {scorecard?.overall_feedback}
                                         </p>
                                     </div>
                                     {/* Key Strengths & Development Areas Grid */}
@@ -412,10 +405,10 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 Key Strengths
                                             </h5>
                                             <ul className="space-y-3.5 text-sm text-[#212529]">
-                                                {scorecard?.key_strengths?.map((strength, index) => (
+                                                {scorecard?.per_question_summary?.flatMap(q => q.points_covered || []).map((item, index) => (
                                                     <li key={index} className="flex items-start gap-2.5">
                                                         <span className="text-[#2d5a27] font-bold mt-0.5">•</span>
-                                                        <span>{strength}</span>
+                                                        <span>{item}</span>
                                                     </li>
                                                 ))}
                                             </ul>
@@ -428,10 +421,10 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 Development Areas
                                             </h5>
                                             <ul className="space-y-3.5 text-sm text-[#212529]">
-                                                {scorecard?.development_areas?.map((dev, index) => (
+                                                {scorecard?.per_question_summary?.flatMap(q => q.points_missed || []).map((item, index) => (
                                                     <li key={index} className="flex items-start gap-2.5">
                                                         <span className="text-[#6c757d] font-bold mt-0.5">•</span>
-                                                        <span>{dev}</span>
+                                                        <span>{item}</span>
                                                     </li>
                                                 ))}
                                             </ul>
@@ -519,7 +512,7 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 {question.score_obtained}
                                             </span>
                                             <span className="text-[#6c757d] text-xs font-bold font-sans uppercase">
-                                                /100
+                                                /{question.max_score}
                                             </span>
                                         </div>
                                     </div>
@@ -536,11 +529,11 @@ function ScheduledInterviewFeedback({ data = null }) {
                                         </div>
 
                                         <span className="text-[#6c757d] text-[10px] font-bold uppercase tracking-widest block mb-2">
-                                            Candidate Response
+                                            AI Feedback
                                         </span>
 
                                         <div className="bg-[#f8f9fa] border border-[#dee2e6]/60 p-4 rounded-lg text-sm text-[#212529] leading-relaxed max-h-45 overflow-y-auto scrollbar-thin">
-                                            "{question.candidate_response}"
+                                            "{question.evaluator_note}"
                                         </div>
                                     </div>
 
@@ -570,7 +563,11 @@ function ScheduledInterviewFeedback({ data = null }) {
                                         </span>
 
                                         <div className="bg-[#f8f9fa] border border-[#dee2e6]/60 p-4 rounded-lg text-sm text-[#212529] leading-relaxed max-h-40 overflow-y-auto scrollbar-thin mb-4">
-                                            {question.ideal_answer_summary}
+                                            <ul>
+                                                {question.points_missed?.map((item, index) => (
+                                                    <li key={index}>{item}</li>
+                                                ))}
+                                            </ul>
                                         </div>
                                     </div>
 
@@ -654,17 +651,13 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 )}
                                             </ul>
                                         </div>
-
                                     </div>
                                 </div>
                             </section>
-
                         </div>
                     )
                 )}
-
             </main>
-
         </div>
     );
 }

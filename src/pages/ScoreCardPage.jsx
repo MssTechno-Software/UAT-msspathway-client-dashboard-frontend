@@ -71,6 +71,7 @@ function ScoreCardPage() {
             navigate("/Interview-Performance-Report", {
                 state: {
                     scorecard: response.data.scorecard,
+                    from: "scorecard"
                 },
             });
         } catch (error) {

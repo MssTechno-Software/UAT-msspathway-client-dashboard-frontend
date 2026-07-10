@@ -55,7 +55,9 @@ const NextSessionCard = ({ session, onStart }) => {
                     className="mt-6 w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 cursor-pointer"
                     onClick={() => onStart(session)}
                 >
-                    START
+                    {session.interview_source === "realtime"
+                        ? "JOIN MEETING"
+                        : "START"}
                 </button>
 
             </div>

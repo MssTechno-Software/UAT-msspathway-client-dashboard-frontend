@@ -73,7 +73,13 @@ const CalendarView = ({
             title: item.title,
             start: item.scheduled_at,
             end: item.scheduled_at,
-            extendedProps: item,
+
+            // Disable completed interviews
+            editable: item.status !== "completed",
+            extendedProps: {
+                ...item,
+                isCompleted: item.status === "completed",
+            },
         }));
     }, [scheduledInterviews]);
 
@@ -81,9 +87,16 @@ const CalendarView = ({
 
         const interview = eventInfo.event.extendedProps;
         const isRealtime = interview.interview_source === "realtime";
-
+        const isCompleted = interview.isCompleted;
         return (
-            <div className={`rounded-md p-1 border-l-4 ${isRealtime ? "bg-blue-100 border-blue-500" : "bg-slate-100 border-slate-500"}`}>
+            <div
+                className={`rounded-md p-1 border-l-4 ${isCompleted
+                    ? "border-gray-400 cursor-not-allowed"
+                    : isRealtime
+                        ? "bg-blue-100 border-blue-500 cursor-pointer"
+                        : "bg-slate-100 border-slate-500 cursor-pointer"
+                    }`}
+            >
                 <div className={`font-semibold truncate ${isRealtime ? "text-blue-800" : "text-slate-700"}`}>
                     {interview.title}
                 </div>
@@ -99,23 +112,23 @@ const CalendarView = ({
                         minute: "2-digit",
                     })}
                 </div>
+                {isCompleted && (
+                    <div className="text-[10px] font-semibold text-red-600 mt-1">
+                        Completed
+                    </div>
+                )}
             </div>
-
         );
     };
 
     return (
-
         <div className="grid grid-cols-12 gap-6">
-
             {/* Calendar */}
-
             <div className="col-span-9 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-4">
 
                     {/* Left */}
                     <div className="flex items-center gap-2">
-
                         {/* Month Dropdown */}
                         <div className="flex items-center border border-[#D5DDE8] rounded overflow-hidden bg-white">
 
@@ -138,7 +151,6 @@ const CalendarView = ({
                             >
                                 ❯
                             </button>
-
                         </div>
 
                         {/* Today */}
@@ -148,28 +160,23 @@ const CalendarView = ({
                         >
                             Today
                         </button>
-
                     </div>
 
                     {/* Right */}
                     <div className="flex border border-[#D5DDE8] rounded overflow-hidden">
-
                         <button
                             onClick={() => changeView("timeGridWeek")}
                             className="px-4 h-8 text-[12px] font-semibold bg-white border-r border-[#D5DDE8] cursor-pointer hover:bg-gray-100"
                         >
                             Week
                         </button>
-
                         <button
                             onClick={() => changeView("dayGridMonth")}
                             className="px-4 h-8 text-[12px] font-semibold bg-[#F7F8FB] cursor-pointer hover:bg-gray-100"
                         >
                             Month
                         </button>
-
                     </div>
-
                 </div>
                 <FullCalendar
                     ref={calendarRef}
@@ -190,9 +197,13 @@ const CalendarView = ({
                     events={events}
                     eventContent={renderEvent}
                     height="auto"
-                    eventClick={(info) =>
-                        onStartInterview(info.event.extendedProps)
-                    }
+                    eventClick={(info) => {
+                        const interview = info.event.extendedProps;
+                        if (interview.isCompleted) {
+                            return;
+                        }
+                        onStartInterview(interview);
+                    }}
                 />
             </div>
 

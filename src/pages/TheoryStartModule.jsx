@@ -110,9 +110,9 @@ function TheoryStartModule() {
                                 <div
                                     onClick={() => setDifficulty("Easy")}
                                     className={`cursor-pointer border rounded-lg p-5 transition
-                                    ${difficulty === "Easy"
+                                        ${difficulty === "Easy"
                                             ? "border-2 border-[#3b6934] bg-[#eff4ff]"
-                                            : "border-[#d5c2bf]"
+                                            : "border-[#d5c2bf] hover:border-[#3b6934]"
                                         }`}
                                 >
                                     <div className="flex justify-between mb-4">
@@ -127,9 +127,7 @@ function TheoryStartModule() {
                                         )}
                                     </div>
 
-                                    <h3 className="font-bold text-[#3b6934]">
-                                        Easy
-                                    </h3>
+                                    <h3 className="font-bold text-[#3b6934]">Easy</h3>
 
                                     <p className="text-sm text-[#514441] mt-2">
                                         Entry-level focus, standard questions.
@@ -137,32 +135,62 @@ function TheoryStartModule() {
                                 </div>
 
                                 {/* Medium */}
-                                <div className="opacity-40 border border-[#d5c2bf] rounded-lg p-5">
-                                    <span className="material-symbols-outlined mb-4">
-                                        equalizer
-                                    </span>
+                                <div
+                                    onClick={() => setDifficulty("Medium")}
+                                    className={`cursor-pointer border rounded-lg p-5 transition
+                                        ${difficulty === "Medium"
+                                            ? "border-2 border-[#3b6934] bg-[#eff4ff]"
+                                            : "border-[#d5c2bf] hover:border-[#3b6934]"
+                                        }`}
+                                >
+                                    <div className="flex justify-between mb-4">
+                                        <span className="material-symbols-outlined text-[#3b6934]">
+                                            equalizer
+                                        </span>
 
-                                    <h3 className="font-bold">
+                                        {difficulty === "Medium" && (
+                                            <span className="material-symbols-outlined text-[#3b6934]">
+                                                check_circle
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <h3 className="font-bold text-[#3b6934]">
                                         Medium
                                     </h3>
 
-                                    <p className="text-sm mt-2">
-                                        Professional assessment, behavioral depth.
+                                    <p className="text-sm text-[#514441] mt-2">
+                                        Professional assessment with intermediate difficulty.
                                     </p>
                                 </div>
 
                                 {/* Hard */}
-                                <div className="opacity-40 border border-[#d5c2bf] rounded-lg p-5">
-                                    <span className="material-symbols-outlined mb-4">
-                                        bolt
-                                    </span>
+                                <div
+                                    onClick={() => setDifficulty("Hard")}
+                                    className={`cursor-pointer border rounded-lg p-5 transition
+                                        ${difficulty === "Hard"
+                                            ? "border-2 border-[#3b6934] bg-[#eff4ff]"
+                                            : "border-[#d5c2bf] hover:border-[#3b6934]"
+                                        }`}
+                                >
+                                    <div className="flex justify-between mb-4">
+                                        <span className="material-symbols-outlined text-[#3b6934]">
+                                            bolt
+                                        </span>
 
-                                    <h3 className="font-bold">
+                                        {difficulty === "Hard" && (
+                                            <span className="material-symbols-outlined text-[#3b6934]">
+                                                check_circle
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <h3 className="font-bold text-[#3b6934]">
                                         Hard
                                     </h3>
 
-                                    <p className="text-sm mt-2">
-                                        Stress testing, high-level strategy.
+                                    <p className="text-sm text-[#514441] mt-2">
+                                        Advanced interview with complex technical questions.
                                     </p>
                                 </div>
 
@@ -222,14 +250,14 @@ function TheoryStartModule() {
                                         });
                                     }, 500);
                                 }}
-                                className="w-full mt-5 bg-[#3b6934] text-white py-4 rounded-xl font-bold uppercase"
+                                className="w-full mt-5 bg-[#3b6934] text-white py-4 rounded-xl font-bold uppercase cursor-pointer"
                             >
                                 Start Interview
                             </button>
 
                             <button
                                 onClick={() => navigate(-1)}
-                                className="w-full mt-4 border border-[#d5c2bf] py-3 rounded-lg uppercase text-[#514441]"
+                                className="w-full mt-4 border border-[#d5c2bf] py-3 rounded-lg uppercase text-[#514441] cursor-pointer"
                             >
                                 Cancel Assessment
                             </button>

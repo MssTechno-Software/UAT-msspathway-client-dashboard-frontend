@@ -31,12 +31,12 @@ function ScheduledInterviewMode() {
 
     const activeDuration =
         preStartData?.duration?.label || "--";
-
-    const focusAreas =
+    //resume
+    const focusArea =
         preStartData?.question_focus || [];
-
-    // const focusTags =
-    //     preStartData?.question_focus?.map(area => area.title) || [];
+    //company
+    const focusAreas =
+        preStartData?.question_focus_areas || [];
 
     /*start interview*/
     console.log({ clientId, interviewId: interview.interview_id });
@@ -185,29 +185,23 @@ function ScheduledInterviewMode() {
                                             {focusAreas.map((area, index) => (
                                                 <div
                                                     key={index}
-                                                    className="flex items-center gap-3"
+                                                    className="flex gap-3"
                                                 >
-                                                    <CircleCheck
-                                                        className="w-5 h-5 text-[#154212] shrink-0"
-                                                    />
+                                                    <CircleCheck className="w-5 h-5 text-[#154212] shrink-0 mt-1" />
 
-                                                    <p className="text-lg font-semibold text-[#0b1c30]">
-                                                        {area}
-                                                    </p>
+                                                    <div>
+                                                        <p className="text-lg font-semibold text-[#0b1c30]">
+                                                            {area.title}
+                                                        </p>
+
+                                                        <p className="text-sm text-[#6B7280]">
+                                                            {area.description}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                </div>
-                                {/* Info */}
-                                <div className="mt-6 pt-6 border-t border-[#E5E7EB] flex gap-3 items-start">
-                                    <span className="p-1 rounded-full bg-[#ffdad6] text-[#ba1a1a]">
-                                        <Info className="w-4 h-4" />
-                                    </span>
-
-                                    <p className="text-sm sm:text-base leading-6 text-[#514441]">
-                                        {preStartData?.info_note}
-                                    </p>
                                 </div>
                             </div>
 
@@ -293,7 +287,7 @@ function ScheduledInterviewMode() {
                                             Question Focus Areas
                                         </p>
                                         <div className="space-y-5">
-                                            {focusAreas.map((area, index) => (
+                                            {focusArea.map((area, index) => (
                                                 <div
                                                     key={index}
                                                     className="flex items-center gap-3"

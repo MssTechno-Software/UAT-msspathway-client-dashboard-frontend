@@ -216,15 +216,33 @@ function SelfIntroductionQuestion() {
 
     //skip question logic
     const handleSkipQuestion = () => {
-        if (!currentQuestion?.attempted_status) return;
         stopRecording();
         resetTranscript();
         setTimeLeft(119);
 
-        if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex((prev) => prev + 1);
+        const updatedQuestions = [...questions];
+
+        updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
+
+        const nextIndex = updatedQuestions.findIndex(
+            (q, i) =>
+                i > currentQuestionIndex &&
+                q.attempted_status !== "completed" &&
+                q.attempted_status !== "skipped"
+        );
+
+        if (nextIndex !== -1) {
+            updatedQuestions[nextIndex].attempted_status = "current";
+            setCurrentQuestionIndex(nextIndex);
+            setQuestions(updatedQuestions);
         } else {
-            navigate("/feedback");
+            setQuestions(updatedQuestions);
+
+            setPopup({
+                show: true,
+                type: "warning",
+                message: "This is the last question. Click OK to finish the interview.",
+            });
         }
     };
 

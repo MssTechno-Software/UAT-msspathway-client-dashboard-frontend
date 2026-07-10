@@ -3,7 +3,7 @@ import ListView from "../pages/scheduledForYou/ListView";
 import CalendarView from "../pages/scheduledForYou/CalendarView";
 import axios from "axios";
 import BASE_URL from "../config/api";
-import { FiLoader, FiSearch, FiX } from "react-icons/fi";
+import { FiLoader, FiSearch, FiX, FiCalendar, FiList } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 const ScheduledInterviews = () => {
     const [view, setView] = useState("list");
@@ -89,8 +89,19 @@ const ScheduledInterviews = () => {
     const handleStartInterview = async (interview) => {
         try {
 
-            // Disable for realtime interviews
+            // Realtime interview
             if (interview.interview_source === "realtime") {
+
+                if (interview.meeting_link) {
+                    window.open(interview.meeting_link, "_blank", "noopener,noreferrer");
+                } else {
+                    setPopup({
+                        show: true,
+                        type: "error",
+                        message: "Meeting link is not available.",
+                    });
+                }
+
                 return;
             }
 
@@ -185,23 +196,26 @@ const ScheduledInterviews = () => {
 
                         <button
                             onClick={() => setView("month")}
-                            className={`px-5 py-2 cursor-pointer ${view === "month"
+                            className={`flex items-center gap-2 px-5 py-2 transition cursor-pointer ${view === "month"
                                 ? "bg-gray-300 text-black"
                                 : "bg-white"
                                 }`}
                         >
-                            Calendar View
+                            <FiCalendar size={18} />
+                            <span>Calendar</span>
                         </button>
 
                         <button
                             onClick={() => setView("list")}
-                            className={`px-5 py-2 cursor-pointer ${view === "list"
+                            className={`flex items-center gap-2 px-5 py-2 transition cursor-pointer ${view === "list"
                                 ? "bg-gray-300 text-black"
                                 : "bg-white"
                                 }`}
                         >
-                            List View
+                            <FiList size={18} />
+                            <span>List</span>
                         </button>
+
                     </div>
                 </div>
             </div>

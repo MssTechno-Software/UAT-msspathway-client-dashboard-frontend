@@ -115,7 +115,9 @@ const ListView = ({
                             : "bg-green-700 hover:bg-green-800"
                           }`}
                       >
-                        START INTERVIEW
+                        {item.interview_source === "realtime"
+                          ? "JOIN MEETING"
+                          : "START INTERVIEW"}
                       </button>
                     </td>
                   </tr>

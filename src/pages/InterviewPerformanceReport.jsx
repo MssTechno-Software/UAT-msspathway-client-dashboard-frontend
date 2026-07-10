@@ -29,6 +29,7 @@ export default function InterviewPerformanceReport({ data = null }) {
     const location = useLocation();
     const scorecard = location.state?.scorecard;
     console.log("Scorecard:", scorecard);
+    const from = location.state?.from;
     // View state: 'overall' or 'question'
     const [viewMode, setViewMode] = useState('overall');
     const [selectedQuestionId, setSelectedQuestionId] = useState(1);
@@ -132,6 +133,11 @@ export default function InterviewPerformanceReport({ data = null }) {
                         onClick={() => {
                             if (viewMode === "question") {
                                 setViewMode("overall");
+                                return;
+                            }
+
+                            if (from === "dashboard") {
+                                navigate("/client-dashboard");
                             } else {
                                 navigate("/scorecards");
                             }
