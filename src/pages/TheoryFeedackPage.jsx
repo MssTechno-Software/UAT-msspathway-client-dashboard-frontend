@@ -180,7 +180,7 @@ function TheoryFeedbackPage() {
                                             className="text-[#3b6934]"
                                         />
                                         <span className="text-2xl font-bold text-[#3b6934]">
-                                            {feedbackData.overall_score}/100
+                                            {feedbackData?.evaluation?.overall_score}/100
                                         </span>
                                     </div>
                                 </div>
@@ -213,30 +213,86 @@ function TheoryFeedbackPage() {
                             <div className="flex-1 mt-5 rounded-xl p-4 sm:p-6 lg:p-8 bg-white shadow-sm">
 
                                 {/* Strengths */}
-                                <h3 className="text-[#3b6934] font-bold uppercase flex items-center gap-2 mb-6 text-sm sm:text-base">
+                                <h3 className="text-[#3b6934] font-bold uppercase flex items-center gap-2 mb-4">
                                     <TrendingUp size={18} />
                                     Comprehensive Strengths
                                 </h3>
 
-                                <ul>
-                                    {feedbackData?.comprehensive_strengths?.map((item, index) => (
-                                        <li key={index}>• {item}</li>
+                                <ul className="space-y-2 mb-8">
+                                    {feedbackData?.evaluation?.strengths?.map((item, index) => (
+                                        <li key={index} className="text-[#0b1c30]">
+                                            • {item}
+                                        </li>
                                     ))}
                                 </ul>
-                            </div>
 
-                            {/* Improvement Areas */}
-                            <div className="mt-6">
+                                {/* Improvement Areas */}
                                 <h3 className="text-red-600 font-bold uppercase flex items-center gap-2 mb-4">
                                     <Lightbulb size={18} />
                                     Improvement Areas
                                 </h3>
 
-                                <ul className="space-y-3 text-[#0b1c30]">
-                                    {feedbackData?.strategic_improvements?.map((item, index) => (
-                                        <li key={index}>• {item}</li>
+                                <ul className="space-y-2 mb-8">
+                                    {feedbackData?.evaluation?.improvement_areas?.map((item, index) => (
+                                        <li key={index} className="text-[#0b1c30]">
+                                            • {item}
+                                        </li>
                                     ))}
                                 </ul>
+
+                                {/* Overall Feedback */}
+                                <div className="mt-8">
+                                    <h3 className="font-bold text-[#3b6934] uppercase mb-3">
+                                        Overall Feedback
+                                    </h3>
+
+                                    <p className="text-gray-700 leading-7">
+                                        {feedbackData?.evaluation?.overall_feedback}
+                                    </p>
+                                </div>
+
+                                {/* Candidate Tier */}
+                                <div className="mt-6">
+                                    <span className="font-bold text-[#3b6934]">
+                                        Candidate Tier :
+                                    </span>
+
+                                    <span className="ml-2 text-red-600 font-semibold">
+                                        {feedbackData?.evaluation?.candidate_tier}
+                                    </span>
+                                </div>
+
+                                {/* Scores */}
+                                <div className="grid grid-cols-2 gap-4 mt-8">
+                                    <div className="border border-gray-200 rounded-lg p-3">
+                                        <p className="text-sm text-gray-500">Accuracy</p>
+                                        <p className="text-xl font-bold">
+                                            {feedbackData?.evaluation?.scores?.accuracy}
+                                        </p>
+                                    </div>
+
+                                    <div className="border border-gray-200 rounded-lg p-3">
+                                        <p className="text-sm text-gray-500">Completeness</p>
+                                        <p className="text-xl font-bold">
+                                            {feedbackData?.evaluation?.scores?.completeness}
+                                        </p>
+                                    </div>
+
+                                    <div className="border border-gray-200 rounded-lg p-3">
+                                        <p className="text-sm text-gray-500">Clarity</p>
+                                        <p className="text-xl font-bold">
+                                            {feedbackData?.evaluation?.scores?.clarity}
+                                        </p>
+                                    </div>
+
+                                    <div className="border border-gray-200 rounded-lg p-3">
+                                        <p className="text-sm text-gray-500">Depth</p>
+                                        <p className="text-xl font-bold">
+                                            {feedbackData?.evaluation?.scores?.depth}
+                                        </p>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
