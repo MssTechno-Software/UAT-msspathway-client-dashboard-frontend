@@ -203,7 +203,17 @@ function ScheduledAIInterview() {
 
         const updatedQuestions = [...questions];
 
+        // Remove old current status
+        updatedQuestions.forEach((q) => {
+            if (q.attempted_status === "current") {
+                q.attempted_status = "pending";
+            }
+        });
+
+        // Mark current question completed
         updatedQuestions[currentQuestionIndex].attempted_status = "completed";
+
+
 
         const nextIndex = updatedQuestions.findIndex(
             (q, i) =>
@@ -222,10 +232,6 @@ function ScheduledAIInterview() {
         stopRecording();
         resetTranscript();
         setTimeLeft(119);
-
-        if (currentQuestionIndex < updatedQuestions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-        }
     };
 
     const handleSkipQuestion = () => {

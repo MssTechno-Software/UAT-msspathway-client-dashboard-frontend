@@ -20,30 +20,26 @@ function ScheduledInterviewFeedback({ data = null }) {
     const [viewMode, setViewMode] = useState('overall');
     const [selectedQuestionId, setSelectedQuestionId] = useState(1);
     const currentQuestionIndex = selectedQuestionId - 1;
-    const technicalMetrics = scorecard?.soft_skills
-        ? [
-            {
-                name: "Confidence",
-                score: scorecard.soft_skills.scores.confidence,
-            },
-            {
-                name: "Clarity",
-                score: scorecard.soft_skills.scores.clarity,
-            },
-            {
-                name: "Leadership",
-                score: scorecard.soft_skills.scores.leadership_potential,
-            },
-            {
-                name: "Problem Solving",
-                score: scorecard.soft_skills.scores.problem_solving,
-            },
-            {
-                name: "Empathy",
-                score: scorecard.soft_skills.scores.empathy,
-            },
-        ]
-        : [];
+    const technicalMetrics = [
+        {
+            name: "Questions",
+            score:
+                ((scorecard?.submitted_count || 0) /
+                    (scorecard?.total_questions || 1)) *
+                100,
+        },
+        {
+            name: "Final Score",
+            score:
+                ((scorecard?.final_score || 0) /
+                    (scorecard?.max_possible || 1)) *
+                100,
+        },
+        {
+            name: "Completion",
+            score: scorecard?.interview_complete ? 100 : 0,
+        },
+    ];
     // Dynamic calculations for overall score SVG circular progress
     const circleRadius = 58;
     const circleCircumference = 2 * Math.PI * circleRadius;
@@ -405,12 +401,13 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 Key Strengths
                                             </h5>
                                             <ul className="space-y-3.5 text-sm text-[#212529]">
-                                                {scorecard?.per_question_summary?.flatMap(q => q.points_covered || []).map((item, index) => (
-                                                    <li key={index} className="flex items-start gap-2.5">
-                                                        <span className="text-[#2d5a27] font-bold mt-0.5">•</span>
-                                                        <span>{item}</span>
-                                                    </li>
-                                                ))}
+                                                {scorecard?.per_question_summary.every(
+                                                    q => q.points_covered.length === 0
+                                                ) && (
+                                                        <p className="text-gray-500 italic">
+                                                            No strengths were identified.
+                                                        </p>
+                                                    )}
                                             </ul>
                                         </div>
 
@@ -421,11 +418,24 @@ function ScheduledInterviewFeedback({ data = null }) {
                                                 Development Areas
                                             </h5>
                                             <ul className="space-y-3.5 text-sm text-[#212529]">
-                                                {scorecard?.per_question_summary?.flatMap(q => q.points_missed || []).map((item, index) => (
-                                                    <li key={index} className="flex items-start gap-2.5">
-                                                        <span className="text-[#6c757d] font-bold mt-0.5">•</span>
-                                                        <span>{item}</span>
-                                                    </li>
+                                                {scorecard?.per_question_summary.map((q) => (
+                                                    <div key={q.question_number} className="mb-5">
+
+                                                        <h5 className="font-bold">
+                                                            Question {q.question_number}
+                                                        </h5>
+
+                                                        <ul>
+                                                            {
+                                                                q.points_missed.map((item, index) => (
+                                                                    <li key={index}>
+                                                                        • {item}
+                                                                    </li>
+                                                                ))
+                                                            }
+                                                        </ul>
+
+                                                    </div>
                                                 ))}
                                             </ul>
                                         </div>
@@ -444,34 +454,33 @@ function ScheduledInterviewFeedback({ data = null }) {
 
                                 {/* Scrollable list */}
                                 <div className="space-y-6 overflow-y-auto max-h-95 pr-2 flex-1 scrollbar-thin">
-                                    {scorecard?.interview_highlights?.map((highlight, index) => {
-                                        const isTech = highlight.tag === "TECH_FORWARD";
-                                        const isCommunication = highlight.tag === "COMMUNICATION";
+                                    <div className="space-y-4">
 
-                                        return (
-                                            <div key={index} className={`relative pl-5 border-l-[3px] ${isTech ? "border-[#2d5a27]" : "border-[#dee2e6]"
-                                                }`}>
-                                                <p className="italic text-[#212529] text-[15px] leading-relaxed mb-3">
-                                                    "{highlight.quote}"
-                                                </p>
-                                                <div className={`inline-flex items-center bg-opacity-10 px-3 py-1.5 rounded-full border ${isCommunication
-                                                    ? "bg-[#2d5a27]/10 border-[#2d5a27]/20 text-[#2d5a27]"
-                                                    : "bg-[#f1f3f5] border-[#dee2e6] text-[#6c757d]"
-                                                    }`}>
-                                                    {isTech ? (
-                                                        <BadgeCheck className="w-3.5 h-3.5 mr-1 text-[#2d5a27]" />
-                                                    ) : isTech ? (
-                                                        <Sparkles className="w-3.5 h-3.5 mr-1 text-[#6c757d]" />
-                                                    ) : (
-                                                        <Target className="w-3.5 h-3.5 mr-1 text-[#6c757d]" />
-                                                    )}
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider">
-                                                        {highlight.tag}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                        <div className="border border-gray-200 rounded-lg p-4">
+                                            <p className="font-semibold text-[#2d5a27]">
+                                                Interview Status
+                                            </p>
+
+                                            <p>{scorecard?.interview_status}</p>
+                                        </div>
+
+                                        <div className="border border-gray-200 rounded-lg p-4">
+                                            <p className="font-semibold text-[#2d5a27]">
+                                                Total Questions
+                                            </p>
+
+                                            <p>{scorecard?.total_questions}</p>
+                                        </div>
+
+                                        <div className="border border-gray-200 rounded-lg p-4">
+                                            <p className="font-semibold text-[#2d5a27]">
+                                                Submitted
+                                            </p>
+
+                                            <p>{scorecard?.submitted_count}</p>
+                                        </div>
+
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -501,6 +510,25 @@ function ScheduledInterviewFeedback({ data = null }) {
                                         <p className="text-[#212529] font-medium italic text-[15px] leading-relaxed">
                                             "{question.question_text}"
                                         </p>
+                                        <div className="space-y-3 mt-5">
+
+                                            <p>
+                                                <b>Category :</b> {question.category}
+                                            </p>
+
+                                            <p>
+                                                <b>Time :</b> {question.time_mins} mins
+                                            </p>
+
+                                            <p>
+                                                <b>Question Context :</b>
+                                            </p>
+
+                                            <p className="text-gray-600">
+                                                {question.question_context}
+                                            </p>
+
+                                        </div>
                                     </div>
 
                                     <div className="pt-6 border-t border-[#dee2e6]/70 mt-6">
