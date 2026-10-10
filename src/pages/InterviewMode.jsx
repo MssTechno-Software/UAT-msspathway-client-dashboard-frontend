@@ -1,39 +1,45 @@
-import { Presentation, BrainCircuit, TerminalSquare, } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FiLoader } from "react-icons/fi";
 import ModeCard from "../components/ModeCard";
 import { useNavigate } from "react-router-dom";
 import BASE_URL from "../config/api";
-
+import PreMarketingSlider from "../components/PreMarketingSlider";
 function InterviewModes() {
-  const [showBeginAssessmentModal, setShowBeginAssessmentModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const navigate = useNavigate();
-  const fetchDashboard = async () => {
+ const fetchDashboard = useCallback(async (signal) => {
     try {
-      setLoading(true);
-
-      const clientId = localStorage.getItem("client_id");
-
-      const response = await fetch(
-        `${BASE_URL}/api/clients/${clientId}/dashboard`,
-      );
-      console.log("Status:", response.status);
-      const data = await response.json();
-
-      console.log(data); // Check the response
-
-      setDashboardData(data);
+        setLoading(true);
+        const clientId = localStorage.getItem("client_id");
+        const response = await fetch(
+            `${BASE_URL}/api/clients/${clientId}/dashboard`,
+            { signal }
+        );
+        console.log("Status:", response.status);
+        const data = await response.json();
+        if (signal.aborted) return;
+        console.log(data);
+        setDashboardData(data);
     } catch (error) {
-      console.error("Dashboard Error:", error);
+        if (!signal.aborted) {
+            console.error("Dashboard Error:", error);
+        }
     } finally {
-      setLoading(false);
+        if (!signal.aborted) {
+            setLoading(false);
+        }
     }
-  };
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
+}, []);
+useEffect(() => {
+    const controller = new AbortController();
+    Promise.resolve().then(() => {
+        if (!controller.signal.aborted) {
+            fetchDashboard(controller.signal);
+        }
+    });
+    return () => controller.abort();
+}, [fetchDashboard]);
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] px-12 py-12">
@@ -70,8 +76,8 @@ function InterviewModes() {
 
         <div className="flex-1 h-px bg-gray-300"></div>
       </div>
-
       {/* Cards */}
+      <PreMarketingSlider />
       <div className="grid lg:grid-cols-2 gap-8">
         <ModeCard
           icon={

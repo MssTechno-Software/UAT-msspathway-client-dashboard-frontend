@@ -4,7 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import NextSessionCard from "./NextSessionCard";
 import TimelineCard from "./TimelineCard";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CalendarView = ({
     scheduledInterviews,
@@ -58,15 +58,11 @@ const CalendarView = ({
     };
 
     const events = useMemo(() => {
+        
         if (!scheduledInterviews) return [];
-
-        let interviews = [];
-
-        if (Array.isArray(scheduledInterviews)) {
-            interviews = scheduledInterviews;
-        } else {
-            interviews = Object.values(scheduledInterviews).flat();
-        }
+        const interviews = Array.isArray(scheduledInterviews)
+            ? scheduledInterviews
+            : Object.values(scheduledInterviews).flat();
 
         return interviews.map((item) => ({
             id: item.interview_id,

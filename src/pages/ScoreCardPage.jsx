@@ -1,7 +1,4 @@
 import {
-    FiCalendar,
-    FiChevronLeft,
-    FiChevronRight,
     FiSearch,
     FiMapPin,
     FiLoader,
@@ -10,64 +7,71 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import BASE_URL from "../config/api";
+
+// Main component for the scorecards page.
 function ScoreCardPage() {
     const navigate = useNavigate();
     const [scorecards, setScorecards] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
-
+    const [invalidPopup, setInvalidPopup] = useState(false);
+    const [popupTitle, setPopupTitle] = useState("Invalid Date Range");
+    const [appliedFromDate, setAppliedFromDate] = useState("");
+    const [appliedToDate, setAppliedToDate] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [errorMessage, setErrorMessage] = useState("");
     const client_id = localStorage.getItem("client_id");
-
-    const getScorecards = async () => {
-        try {
-            setLoading(true);
-
-            const response = await axios.get(
-                `${BASE_URL}/api/clients/${client_id}/scorecards`,
-                {
-                    params: {
-                        page,
-                        page_size: 10,
-                        from_date: fromDate || undefined,
-                        to_date: toDate || undefined,
-                    },
-                }
-            );
-
-            setScorecards(response.data.scorecards);
-            setTotalPages(response.data.pagination.total_pages);
-            setTotalRecords(response.data.pagination.total_records);
-        } catch (error) {
-            console.error(error);
-
-            setPopup({
-                show: true,
-                type: "error",
-                message:
-                    error.response?.data?.message ||
-                    "Something went wrong. Please try again.",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Fetches scorecards whenever pagination or applied date filters change.
     useEffect(() => {
-        getScorecards(page, fromDate, toDate);
-    }, [page]);
-
+        let cancelled = false;
+        const loadScorecards = async () => {
+            try {
+                const response = await axios.get(
+                    `${BASE_URL}/api/clients/${client_id}/scorecards`,
+                    {
+                        params: {
+                            page,
+                            page_size: 10,
+                            from_date: appliedFromDate || undefined,
+                            to_date: appliedToDate || undefined,
+                        },
+                    }
+                );
+                if (cancelled) return;
+                setScorecards(response.data.scorecards);
+                setTotalPages(response.data.pagination.total_pages);
+                setTotalRecords(response.data.pagination.total_records);
+            } catch (error) {
+                if (cancelled) return;
+                console.error(error);
+                setPopupTitle("Error");
+                setErrorMessage(
+                    error.response?.data?.message ||
+                    "Something went wrong. Please try again."
+                );
+                setInvalidPopup(true);
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+        loadScorecards();
+        return () => {
+            cancelled = true;
+        };
+    }, [page, appliedFromDate, appliedToDate, refreshKey, client_id]);
+    // Fetches the selected scorecard and opens its detailed report.
     const handleViewInsights = async (scorecardId) => {
         try {
             setLoading(true);
-
             const response = await axios.get(
                 `${BASE_URL}/api/clients/${client_id}/scorecards/${scorecardId}`
             );
-
             navigate("/Interview-Performance-Report", {
                 state: {
                     scorecard: response.data.scorecard,
@@ -76,44 +80,57 @@ function ScoreCardPage() {
             });
         } catch (error) {
             console.error(error);
-
-            setPopup({
-                show: true,
-                type: "error",
-                message:
-                    error.response?.data?.message ||
-                    "Failed to load interview report.",
-            });
+            setPopupTitle("Error");
+            setErrorMessage(
+                error.response?.data?.message ||
+                "Failed to load interview report."
+            );
+            setInvalidPopup(true);
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <div className="bg-[#f8f8f8] min-h-screen p-8">
-            {/*Loader*/}
+            {/* Error popup */}
+            {invalidPopup && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
+                    <div className="bg-white w-full max-w-xs sm:max-w-[320px] p-5 sm:p-6 rounded-lg shadow-lg text-center">
+                        <h3 className="text-lg font-semibold mb-2 text-red-600">
+                            {popupTitle}
+                        </h3>
+                        <p className="text-gray-600 text-sm wrap-break-word">
+                            {errorMessage}
+                        </p>
+                        <button
+                            onClick={() => setInvalidPopup(false)}
+                            className="mt-5 px-6 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 text-sm cursor-pointer"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
+            {/* Loading indicator */}
             {loading && (
                 <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
                     <div className="p-6 flex flex-col items-center gap-3">
                         <FiLoader className="animate-spin text-4xl text-green-800" />
-
                         <p className="text-gray-800 font-medium">
                             Please wait...
                         </p>
                     </div>
                 </div>
             )}
-            {/* Header */}
             <div className="mb-8">
                 <h1 className="text-5xl font-bold text-[#1c0d05]">Scorecards</h1>
-
                 <p className="text-gray-600 mt-2 leading-7 max-w-xl">
                     Review comprehensive interview performance metrics, AI-driven
                     candidate scoring, and detailed evaluation history.
                 </p>
             </div>
-
             {/* Filters */}
+            {/* Date filters and actions */}
             <div className="flex justify-end items-center gap-3 mb-6">
                 <div className="relative">
                     <input
@@ -123,7 +140,6 @@ function ScoreCardPage() {
                         className="w-44 h-10 border border-gray-200 rounded px-3 cursor-pointer"
                     />
                 </div>
-
                 <div className="relative">
                     <input
                         type="date"
@@ -132,49 +148,48 @@ function ScoreCardPage() {
                         className="w-44 h-10 border border-gray-200 rounded px-3 cursor-pointer"
                     />
                 </div>
-
                 <button
                     onClick={() => {
                         if (fromDate && toDate && fromDate > toDate) {
-                            setPopup({
-                                show: true,
-                                type: "error",
-                                message: "From Date cannot be greater than To Date.",
-                            });
+                            setPopupTitle("Invalid Date Range");
+                            setErrorMessage("From Date cannot be greater than To Date.");
+                            setInvalidPopup(true);
                             return;
                         }
+                        setLoading(true);
                         setPage(1);
-                        getScorecards(1, fromDate, toDate);
+                        setAppliedFromDate(fromDate);
+                        setAppliedToDate(toDate);
+                        setRefreshKey((prev) => prev + 1);
                     }}
                     className="bg-[#2e5d2d] text-white h-10 px-6 rounded font-medium flex items-center gap-2 cursor-pointer"
                 >
                     <FiSearch />
                     Search
                 </button>
-
                 <button
                     onClick={() => {
                         setFromDate("");
                         setToDate("");
+                        setLoading(true);
                         setPage(1);
-                        getScorecards();
+                        setAppliedFromDate("");
+                        setAppliedToDate("");
+                        setRefreshKey((prev) => prev + 1);
                     }}
                     className="h-10 px-5 border border-gray-200 rounded bg-white cursor-pointer"
                 >
                     Clear
                 </button>
             </div>
-
             {/* Table Card */}
+            {/* Scorecards table and pagination */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                {/* Top */}
                 <div className="flex justify-between items-center px-6 py-5 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-[#230804]">
                         Recent Scorecards
                     </h2>
                 </div>
-
-                {/* Table */}
                 <table className="w-full">
                     <thead className="text-sm uppercase tracking-wide text-gray-500">
                         <tr className="border-b border-gray-200">
@@ -184,7 +199,6 @@ function ScoreCardPage() {
                             <th className="text-left">AI Insights</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         {scorecards.length === 0 ? (
                             <tr>
@@ -201,13 +215,11 @@ function ScoreCardPage() {
                                     <td className="px-6 py-7">
                                         {item.submitted_date}
                                     </td>
-
                                     <td>
                                         <span className="bg-gray-100 px-4 py-1 rounded-full text-[11px] font-semibold">
                                             {item.interview_mode}
                                         </span>
                                     </td>
-
                                     <td>
                                         <div className="w-40">
                                             <div className="w-full h-2 bg-gray-200 rounded-full">
@@ -218,13 +230,11 @@ function ScoreCardPage() {
                                                     }}
                                                 />
                                             </div>
-
                                             <p className="mt-2 text-sm font-semibold text-[#2f6c2f]">
                                                 {item.performance_score}/100
                                             </p>
                                         </div>
                                     </td>
-
                                     <td>
                                         <button
                                             onClick={() => handleViewInsights(item.scorecard_id)}
@@ -239,45 +249,50 @@ function ScoreCardPage() {
                         )}
                     </tbody>
                 </table>
-
-                {/* Footer */}
                 <div className="flex flex-col md:flex-row gap-3 justify-between items-center px-4 py-3 border-t border-gray-200 bg-gray-50">
                     <div className="text-sm text-gray-500">
                         Showing {scorecards.length} of {totalRecords} scorecards
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* First Page */}
                         <button
                             disabled={page === 1}
-                            onClick={() => setPage(1)}
+                            onClick={() => {
+                                setLoading(true);
+                                setPage(1);
+                            }}
                             className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100 cursor-pointer"
                         >
                             {"<<"}
                         </button>
-                        {/* Previous */}
                         <button
                             disabled={page === 1}
-                            onClick={() => setPage(page - 1)}
+                            onClick={() => {
+                                setLoading(true);
+                                setPage(page - 1);
+                            }}
                             className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100 cursor-pointer"
                         >
                             Previous
                         </button>
-                        {/* Current Page */}
                         <button className="bg-[#2f6f2f] text-white px-4 py-1 rounded">
                             {page}
                         </button>
-                        {/* Next */}
                         <button
-                            disabled={page === totalPages}
-                            onClick={() => setPage(page + 1)}
+                            disabled={page >= totalPages}
+                            onClick={() => {
+                                setLoading(true);
+                                setPage(page + 1);
+                            }}
                             className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100 cursor-pointer"
                         >
                             Next
                         </button>
-                        {/* Last Page */}
                         <button
-                            disabled={page === totalPages}
-                            onClick={() => setPage(totalPages)}
+                            disabled={page >= totalPages}
+                            onClick={() => {
+                                setLoading(true);
+                                setPage(totalPages);
+                            }}
                             className="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100 cursor-pointer"
                         >
                             {">>"}
@@ -288,5 +303,4 @@ function ScoreCardPage() {
         </div>
     );
 }
-
 export default ScoreCardPage;

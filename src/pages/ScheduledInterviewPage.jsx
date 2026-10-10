@@ -48,44 +48,62 @@ const ScheduledInterviews = () => {
             (item.status || "").toLowerCase().includes(search)
         );
     });
-    const getScheduledInterviews = async () => {
-        try {
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadScheduledInterviews = async () => {
+            await Promise.resolve();
+
+            if (cancelled || !clientId) return;
+
             setLoading(true);
 
-            const res = await axios.get(
-                `${BASE_URL}/clients/${clientId}/scheduled-interviews`,
-                {
-                    params: {
-                        view,
-                        page,
-                        page_size: pageSize,
-                    },
+            try {
+                const res = await axios.get(
+                    `${BASE_URL}/clients/${clientId}/scheduled-interviews`,
+                    {
+                        params: {
+                            view,
+                            page,
+                            page_size: pageSize,
+                        },
+                    }
+                );
+
+                if (!cancelled) {
+                    setData(res.data);
                 }
-            );
+            } catch (err) {
+                if (cancelled) return;
 
-            setData(res.data);
+                console.error(err);
 
-        } catch (err) {
-            console.error(err);
+                setPopup({
+                    show: true,
+                    type: "error",
+                    message:
+                        err?.response?.data?.message ||
+                        err?.response?.data?.error ||
+                        err?.response?.data?.detail ||
+                        "Failed to start the interview. Please try again.",
+                });
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
 
-            setPopup({
-                show: true,
-                type: "error",
-                message:
-                    err?.response?.data?.message ||
-                    err?.response?.data?.error ||
-                    err?.response?.data?.detail ||
-                    "Failed to start the interview. Please try again.",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-    useEffect(() => {
         if (clientId) {
-            getScheduledInterviews();
+            loadScheduledInterviews();
         }
+
+        return () => {
+            cancelled = true;
+        };
     }, [clientId, view, page, pageSize]);
+
     const handleStartInterview = async (interview) => {
         try {
 

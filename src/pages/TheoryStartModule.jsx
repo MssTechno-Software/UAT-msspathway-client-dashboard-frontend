@@ -243,7 +243,7 @@ function TheoryStartModule() {
                                                 client_id,
                                                 technology_id,
                                                 subtopic_id,
-                                                difficulty_level: difficulty.toLowerCase(),
+                                                difficulty_level: difficulty,
                                                 topic,
                                                 subTopic,
                                             },

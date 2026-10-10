@@ -1,21 +1,12 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { FiDownload, FiEye, FiEdit, FiTrash2, FiUpload, FiX, FiPenTool, FiLink, FiLoader } from "react-icons/fi";
+import { FiDownload, FiEye, FiEdit, FiUpload, FiLoader } from "react-icons/fi";
 import BASE_URL from "../config/api";
-
 function MyProfile() {
     const client_id = localStorage.getItem("client_id");
     const [client, setClient] = useState(null);
-    const [showEdit, setShowEdit] = useState(false);
     const [documents, setDocuments] = useState([]);
-    const [showDocModal, setShowDocModal] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [showLinkModal, setShowLinkModal] = useState(false);
-    const [linkName, setLinkName] = useState("");
-    const [linkURL, setLinkURL] = useState("");
     const [links, setLinks] = useState([]);
-    const [previewURL, setPreviewURL] = useState("");
     const [profileFile, setProfileFile] = useState(null);
     const [profilePreview, setProfilePreview] = useState("");
     const [profileUrl, setProfileUrl] = useState("");
@@ -27,16 +18,15 @@ function MyProfile() {
         type: "",
         onConfirm: null
     });
-    const getAuthHeaders = () => {
+    const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem("token");
         return {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         };
-    };
-
-    const fetchClient = async () => {
+    }, []);
+    const fetchClient = useCallback(async () => {
         console.log("Fetching client ID:", client_id);
         try {
             setLoading(true);
@@ -44,25 +34,29 @@ function MyProfile() {
                 `${BASE_URL}/clients/clients/${client_id}`,
                 getAuthHeaders()
             );
-
             console.log("CLIENT DATA:", res.data);
             setClient(res.data);
-
         } catch (err) {
             console.error("API ERROR:", err.response?.data || err.message);
         } finally {
             setLoading(false);
         }
-    };
-
+    }, [client_id, getAuthHeaders]);
     useEffect(() => {
+        let cancelled = false;
         if (client_id) {
-            fetchClient();
+            Promise.resolve().then(() => {
+                if (!cancelled) {
+                    fetchClient();
+                }
+            });
         }
-    }, [client_id]);
-
+        return () => {
+            cancelled = true;
+        };
+    }, [client_id, fetchClient]);
     /*fetch documents*/
-    const fetchDocuments = async () => {
+    const fetchDocuments = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axios.get(
@@ -76,16 +70,22 @@ function MyProfile() {
         } finally {
             setLoading(false);
         }
-    };
-
+    }, [client_id, getAuthHeaders]);
     useEffect(() => {
+        let cancelled = false;
         if (client_id) {
-            fetchDocuments();
+            Promise.resolve().then(() => {
+                if (!cancelled) {
+                    fetchDocuments();
+                }
+            });
         }
-    }, [client_id]);
-
+        return () => {
+            cancelled = true;
+        };
+    }, [client_id, fetchDocuments]);
     /*fetch link*/
-    const fetchLinks = async () => {
+    const fetchLinks = useCallback(async () => {
         try {
             setLoading(true);
             const res = await axios.get(
@@ -93,24 +93,28 @@ function MyProfile() {
                 getAuthHeaders()
             );
             console.log("Links API Response:", res.data);
-
             setLinks(res.data.source_links || []);
-
         } catch (err) {
             console.error("Error fetching links:", err);
         } finally {
             setLoading(false);
         }
-    };
-
+    }, [client_id, getAuthHeaders]);
     useEffect(() => {
+        let cancelled = false;
         if (client_id) {
-            fetchLinks();
+            Promise.resolve().then(() => {
+                if (!cancelled) {
+                    fetchLinks();
+                }
+            });
         }
-    }, [client_id]);
-
+        return () => {
+            cancelled = true;
+        };
+    }, [client_id, fetchLinks]);
     /*fetch profile photo*/
-    const fetchProfilePhotoView = async () => {
+    const fetchProfilePhotoView = useCallback(async () => {
         console.log("Fetching profile photo for client ID:", client_id);
         try {
             setLoading(true);
@@ -126,25 +130,31 @@ function MyProfile() {
             console.log("Profile View Response:", res.data);
             const imageURL = URL.createObjectURL(res.data);
             setProfileUrl(imageURL);
-
         } catch (err) {
-            console.error("Profile photo fetch failed:", err);
+            if (err.response?.status !== 404) {
+                console.error("Profile photo fetch failed:", err);
+            }
             setProfileUrl("");
         } finally {
             setLoading(false);
         }
-    };
-
+   }, [client_id]);
     useEffect(() => {
+        let cancelled = false;
         if (client_id) {
-            fetchProfilePhotoView();
+            Promise.resolve().then(() => {
+                if (!cancelled) {
+                    fetchProfilePhotoView();
+                }
+            });
         }
-    }, [client_id]);
-
+        return () => {
+            cancelled = true;
+        };
+    }, [client_id, fetchProfilePhotoView]);
     if (!client) {
         return <div className="p-6">Loading client details...</div>;
     }
-
     /*view document*/
     const handleView = async (doc) => {
         console.log("Viewing document:", doc);
@@ -169,7 +179,6 @@ function MyProfile() {
                 type: "success"
             });
             fetchDocuments();
-
         } catch (err) {
             console.error("View error:", err.response?.data || err.message);
             setPopup({
@@ -181,7 +190,6 @@ function MyProfile() {
             setLoading(false);
         }
     };
-
     /*download document*/
     const handleDownload = async (doc) => {
         console.log("Downloading document:", doc);
@@ -199,11 +207,9 @@ function MyProfile() {
             );
             console.log("Download response received:", res.data);
             const downloadUrl = res.data.download_url;
-
             const link = document.createElement("a");
             link.href = downloadUrl;
             link.setAttribute("download", doc.original_name);
-
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -213,7 +219,6 @@ function MyProfile() {
                 type: "success"
             });
             fetchDocuments();
-
         } catch (err) {
             console.error("Download error:", err.response?.data || err.message);
             setPopup({
@@ -225,14 +230,11 @@ function MyProfile() {
             setLoading(false);
         }
     };
-
     const handleProfileChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const allowed = ["png", "jpg", "jpeg"];
         const ext = file.name.split(".").pop().toLowerCase();
-
         if (!allowed.includes(ext)) {
             setPopup({
                 show: true,
@@ -241,19 +243,15 @@ function MyProfile() {
             });
             return;
         }
-
         setProfileFile(file);
         setProfilePreview(URL.createObjectURL(file));
     };
-
     const profileImage = profileUrl;
-
     const initials = `${client?.client_name
         ?.split(" ")[0]
         ?.charAt(0) || ""}${client?.client_name
             ?.split(" ")[1]
             ?.charAt(0) || ""}`.toUpperCase();
-
     /*add or update profile photo*/
     const handleUploadProfile = async () => {
         console.log("Uploading profile photo:", profileFile);
@@ -265,17 +263,14 @@ function MyProfile() {
             });
             return;
         }
-
         try {
             setLoading(true);
             const formData = new FormData();
             formData.append("file", profileFile);
-
             for (let pair of formData.entries()) {
                 console.log(pair[0], pair[1]);
             }
             console.log("Uploading profile photo for client ID:", client_id);
-
             const res = await axios.post(
                 `${BASE_URL}/documents/clients/${client_id}/profile-picture`,
                 formData,
@@ -286,7 +281,6 @@ function MyProfile() {
                 }
             );
             console.log("Profile photo upload response:", res.data);
-
             setProfileFile(null);
             setProfilePreview("");
             fetchProfilePhotoView();
@@ -297,7 +291,6 @@ function MyProfile() {
                 message: "Profile photo uploaded successfully",
                 type: "success"
             });
-
         } catch (err) {
             console.error("Upload error:", err.response?.data);
             setPopup({
@@ -309,7 +302,6 @@ function MyProfile() {
             setLoading(false);
         }
     };
-
     /*delete profile photo*/
     const handleDeleteProfile = async () => {
         console.log("Deleting profile photo for client ID:", client_id);
@@ -324,17 +316,14 @@ function MyProfile() {
                 }
             );
             console.log("Profile photo delete response:", res.data);
-
             setProfileUrl("");
             setPopup({
                 show: true,
                 message: "Profile photo deleted successfully",
                 type: "success"
             });
-
             setShowPhotoModal(false);
             fetchProfilePhotoView();
-
         } catch (err) {
             console.error("Delete error:", err.response?.data);
             setPopup({
@@ -346,33 +335,24 @@ function MyProfile() {
             setLoading(false);
         }
     };
-
     return (
         <div className="p-4 sm:p-6 bg-white min-h-screen">
             {/* FULL SCREEN LOADER */}
             {loading && (
                 <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
-
                     <div className="p-6 flex flex-col items-center gap-3">
-
                         <FiLoader className="animate-spin text-4xl text-green-800" />
-
                         <p className="text-gray-800 font-medium">
                             Please wait...
                         </p>
-
                     </div>
                 </div>
             )}
-
             {/* HEADER */}
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
-
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-
                     {/* PROFILE IMAGE */}
                     <div className="relative">
-
                         {profileImage ? (
                             <img
                                 src={profileImage}
@@ -391,73 +371,61 @@ function MyProfile() {
                                 {initials}
                             </div>
                         )}
-
                         <button
                             onClick={() => setShowPhotoModal(true)}
                             className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow cursor-pointer"
                         >
                             {profileUrl ? <FiEdit /> : <FiUpload />}
                         </button>
-
                     </div>
-
                     <div>
                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">
                             {client.client_name || "No Name"}
                         </h1>
-
                         <p className="text-base sm:text-lg font-bold mt-1">
                             {client.professional_role || "No Role"}
                         </p>
                     </div>
                 </div>
             </div>
-
             {/* CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">EMAIL</p>
                     <p className="font-semibold break-all">
                         {client.email || "No Email"}
                     </p>
                 </div>
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">MOBILE</p>
                     <p className="font-semibold">
                         {client.mobile || "No Mobile"}
                     </p>
                 </div>
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">AADHAAR NUMBER</p>
                     <p className="font-semibold break-all">
                         {client.aadhaar_number || "No AADHAR Number"}
                     </p>
                 </div>
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">LOCATION</p>
                     <p className="font-semibold break-all">
                         {client.location || "No Location"}
                     </p>
                 </div>
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">TECHNOLOGY STACKS</p>
                     <p className="font-semibold break-all">
                         {client.technology || "No Technology Stacks"}
                     </p>
                 </div>
-
                 <div className="bg-white p-4 rounded-xl shadow-sm min-w-0 overflow-hidden">
                     <p className="text-xs text-gray-400">ASSIGNED TO</p>
                     <p className="font-semibold">
                         {client.employee_id ? `${client.employee_id} - ${client.employee_name}` : "No Assigned Employee"}
                     </p>
                 </div>
-
                 {/* START DATE */}
                 <div className="bg-white p-4 rounded-xl shadow-sm">
                     <p className="text-xs text-gray-400">START DATE</p>
@@ -467,7 +435,6 @@ function MyProfile() {
                             : "No Start Date"}
                     </p>
                 </div>
-
                 {/* END DATE */}
                 <div className="bg-white p-4 rounded-xl shadow-sm">
                     <p className="text-xs text-gray-400">END DATE</p>
@@ -479,48 +446,38 @@ function MyProfile() {
                     </p>
                 </div>
             </div>
-
             {/* DOCUMENTS */}
             <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
-
                 {/* HEADER */}
                 <div className="p-4 sm:p-6 bg-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-
                     <div>
                         <h2 className="text-lg font-semibold text-gray-800">
                             Document Repository
                         </h2>
-
                         <p className="text-sm text-gray-400">
                             Verified compliance documents and professional records
                         </p>
                     </div>
                 </div>
-
                 {/* DOCUMENTS LIST */}
                 {documents?.length ? (
                     documents.map((doc, i) => {
                         const fileName = doc.original_name || "document";
                         const fileType = fileName.split(".").pop().toUpperCase();
-
                         return (
                             <div
                                 key={i}
                                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-gray-100 last:border-none hover:bg-gray-50 transition"
                             >
-
                                 {/* Left Side*/}
                                 <div className="flex items-start sm:items-center gap-4 w-full">
-
                                     <div className="w-10 h-10 bg-green-800 text-green-800 flex items-center justify-center rounded-lg">
                                         📄
                                     </div>
-
                                     <div>
                                         <p className="text-sm font-semibold text-gray-800">
                                             {fileName}
                                         </p>
-
                                         <p className="text-sm text-gray-400 flex flex-wrap items-center gap-2">
                                             {fileType} •{" "}
                                             {doc.created_at
@@ -530,12 +487,10 @@ function MyProfile() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 text-gray-500 self-end sm:self-auto">
-
                                     <FiEye
                                         className="cursor-pointer hover:text-green-700"
                                         onClick={() => handleView(doc)}
                                     />
-
                                     <FiDownload
                                         className="cursor-pointer hover:text-green-700"
                                         onClick={() => handleDownload(doc)}
@@ -548,30 +503,24 @@ function MyProfile() {
                     <p className="p-6 text-gray-400">No documents available</p>
                 )}
             </div>
-
             {/* LINKS */}
             <div className="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
-
                 {/* HEADER */}
                 <div className="p-4 sm:p-6 bg-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-
                     <div>
                         <h2 className="text-lg font-semibold text-gray-800">
                             Important Links
                         </h2>
-
                         <p className="text-sm text-gray-400">
                             External resources and client-related links
                         </p>
                     </div>
                 </div>
-
                 {/* LINKS LIST */}
                 {links?.length ? (
                     links.map((link, i) => {
                         let name = link.link_type || "Untitled";
                         let url = link.link || "#";
-
                         return (
                             <div
                                 key={i}
@@ -584,7 +533,6 @@ function MyProfile() {
                                     >
                                         {name.length > 100 ? `${name.substring(0, 100)}...` : name}
                                     </p>
-
                                     <a
                                         href={url}
                                         target="_blank"
@@ -601,15 +549,12 @@ function MyProfile() {
                     <p className="p-6 text-gray-400">No links available</p>
                 )}
             </div>
-
             {showPhotoModal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
                     <div className="bg-white p-6 rounded-2xl w-96 shadow-xl relative">
                         <h2 className="text-lg font-semibold mb-4 text-center">
                             Upload Profile Photo
                         </h2>
-
                         {/* CLICK AREA */}
                         <div className="border-2 border-dashed border-gray-300 p-6 rounded-xl text-center cursor-pointer hover:bg-gray-50">
                             <input
@@ -618,7 +563,6 @@ function MyProfile() {
                                 className="hidden"
                                 onChange={handleProfileChange}
                             />
-
                             <label htmlFor="profileUpload" className="cursor-pointer">
                                 <p className="text-gray-500">Click here to add photo</p>
                                 <p className="text-xs text-gray-400 mt-1">
@@ -626,7 +570,6 @@ function MyProfile() {
                                 </p>
                             </label>
                         </div>
-
                         {/* PREVIEW */}
                         {profilePreview && (
                             <img
@@ -634,10 +577,8 @@ function MyProfile() {
                                 className="w-24 h-24 rounded-full mx-auto mt-4 object-cover"
                             />
                         )}
-
                         {/* ACTIONS */}
                         <div className="flex justify-between mt-6">
-
                             {/* DELETE BUTTON */}
                             {profileUrl && (
                                 <button
@@ -647,7 +588,6 @@ function MyProfile() {
                                     Delete
                                 </button>
                             )}
-
                             <div className="flex gap-2 ml-auto">
                                 <button
                                     onClick={() => {
@@ -661,7 +601,6 @@ function MyProfile() {
                                 >
                                     Cancel
                                 </button>
-
                                 <button
                                     onClick={handleUploadProfile}
                                     className="px-4 py-2 bg-green-800 text-white rounded-lg cursor-pointer"
@@ -670,11 +609,9 @@ function MyProfile() {
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             )}
-
             {popup.show && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 bg-opacity-40 z-50 px-2">
                     <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
@@ -697,7 +634,6 @@ function MyProfile() {
                                     >
                                         Yes
                                     </button>
-
                                     <button
                                         onClick={() => setPopup({ show: false })}
                                         className="px-4 py-2 bg-gray-300 rounded border border-gray-300 cursor-pointer"
@@ -720,5 +656,4 @@ function MyProfile() {
         </div>
     );
 }
-
 export default MyProfile;

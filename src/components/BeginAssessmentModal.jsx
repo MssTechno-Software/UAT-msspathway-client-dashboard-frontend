@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
-function BeginAssessmentModal({ open, onClose, onProceed, loading }) {
+function BeginAssessmentModal({ open,  onProceed, loading }) {
   const navigate = useNavigate();
   if (!open) return null;
   return (

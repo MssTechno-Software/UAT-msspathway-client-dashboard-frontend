@@ -1,5 +1,3 @@
-import React from "react";
-
 const NextSessionCard = ({ session, onStart }) => {
 
     if (!session)

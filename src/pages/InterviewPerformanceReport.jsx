@@ -14,17 +14,12 @@ import {
     Check,
     AlertTriangle,
     ArrowLeft,
-    Search,
-    Bell,
-    HelpCircle,
-    Clock,
-    Globe,
     FileText
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
-export default function InterviewPerformanceReport({ data = null }) {
+export default function InterviewPerformanceReport() {
     const navigate = useNavigate();
     const location = useLocation();
     const scorecard = location.state?.scorecard;
@@ -456,7 +451,7 @@ export default function InterviewPerformanceReport({ data = null }) {
                                                     }`}>
                                                     {isTech ? (
                                                         <BadgeCheck className="w-3.5 h-3.5 mr-1 text-[#2d5a27]" />
-                                                    ) : isTech ? (
+                                                    ) : isCommunication ? (
                                                         <Sparkles className="w-3.5 h-3.5 mr-1 text-[#6c757d]" />
                                                     ) : (
                                                         <Target className="w-3.5 h-3.5 mr-1 text-[#6c757d]" />

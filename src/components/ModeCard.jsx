@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { FiCode, FiArrowRight } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
 function ModeCard({ icon, title, description, onBeginAssessment }) {
   return (
     <div className="group border border-[#d5c2bf] rounded-xl p-8 bg-white min-h-110 flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 transition-all">

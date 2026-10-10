@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 import axios from "axios";
-
+import BASE_URL from "../config/api";
 function Login() {
   const [showPopup, setShowPopup] = useState(false);
   const [email, setEmail] = useState("");
@@ -26,7 +26,7 @@ function Login() {
 
     setEmailError("");
     setPasswordError("");
-
+    
     if (!email) {
       setEmailError("Please enter email");
       valid = false;
@@ -57,7 +57,7 @@ function Login() {
 
     try {
       const response = await axios.post(
-        "https://uat-msspathway-software-backend-81057313575.asia-south1.run.app/auth/login",
+        `${BASE_URL}/auth/login`,
         {
           email: email,
           password: password,

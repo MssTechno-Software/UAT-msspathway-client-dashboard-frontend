@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { FiLoader } from "react-icons/fi";
-import { Repeat, GitBranch, Network, List, Database, Puzzle, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle, ArrowLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import BASE_URL from "../config/api";
 
 function SubTopic() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    
+
     const { state } = useLocation();
     const [subTopics, setSubTopics] = useState([]);
     const [popup, setPopup] = useState({
@@ -21,45 +21,65 @@ function SubTopic() {
     const topic = state?.topic || "";
     const technology_id = state?.technology_id;
     const client_id = state?.client_id;
-    useEffect(() => {
-        if (technology_id) {
-            fetchSubTopics();
-        }
-    }, [technology_id]);
 
     /*get subtopics bt technology_id*/
-    const fetchSubTopics = async () => {
-        try {
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadSubTopics = async () => {
+            await Promise.resolve();
+
+            if (cancelled || !technology_id) return;
+
             setLoading(true);
 
-            const response = await fetch(
-                `${BASE_URL}/Topic_based/clients/${client_id}/technologies/${technology_id}/subtopics`
-            );
-
-            const data = await response.json();
-
-            if (data?.subtopics) {
-                const sortedSubTopics = data.subtopics.sort(
-                    (a, b) => a.display_order - b.display_order
+            try {
+                const response = await fetch(
+                    `${BASE_URL}/Topic_based/clients/${client_id}/technologies/${technology_id}/subtopics`
                 );
 
-                setSubTopics(sortedSubTopics);
+                const data = await response.json();
+
+                if (cancelled) return;
+
+                if (data?.subtopics) {
+                    const sortedSubTopics = [...data.subtopics].sort(
+                        (a, b) => a.display_order - b.display_order
+                    );
+
+                    setSubTopics(sortedSubTopics);
+                }
+            } catch (error) {
+                if (cancelled) return;
+
+                console.log("Error in fetching the data:", error);
+
+                setPopup({
+                    show: true,
+                    message:
+                        error.message ||
+                        error.detail ||
+                        "Failed to load subtopics",
+                    type: "error",
+                });
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
-        } catch (error) {
-            console.log("Error in fetching the data:", error);
-            setPopup({
-                show: true,
-                message:
-                    error.message || error.detail || "Failed to load subtopics",
-                type: "error",
-            });
+        };
 
-        } finally {
-            setLoading(false);
+        if (technology_id) {
+            loadSubTopics();
         }
-    };
 
-    const handleSubTopicDoubleClick = (item) => {
+        return () => {
+            cancelled = true;
+        };
+    }, [client_id, technology_id]);
+
+     const handleSubTopicDoubleClick = (item) => {
         navigate("/theory-interview-start-module", {
             state: {
                 topic,
@@ -228,8 +248,8 @@ function SubTopic() {
                     <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
                         <p
                             className={`text-lg font-semibold mb-4 ${popup.type === "success"
-                                    ? "text-green-800"
-                                    : "text-red-600"
+                                ? "text-green-800"
+                                : "text-red-600"
                                 }`}
                         >
                             {popup.message}

@@ -1,4 +1,7 @@
-const BASE_URL =
-  "https://uat-msspathway-software-backend-81057313575.asia-south1.run.app";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!BASE_URL) {
+  throw new Error("VITE_API_BASE_URL is not configured");
+}
 
 export default BASE_URL;

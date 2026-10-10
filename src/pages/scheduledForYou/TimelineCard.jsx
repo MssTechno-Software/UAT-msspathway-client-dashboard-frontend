@@ -1,7 +1,4 @@
-import React from "react";
-
 const TimelineCard = ({ timeline }) => {
-
     return (
 
         <div className="bg-white rounded-xl border border-gray-200 shadow p-5">

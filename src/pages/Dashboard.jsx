@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FiLoader } from "react-icons/fi";
 import StatCard from "../components/StatCard";
 import InterviewTable from "../components/InterviewTable";
@@ -11,41 +11,46 @@ function Dashboard() {
   const clientId = localStorage.getItem("client_id");
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
-
-  const fetchDashboard = async () => {
+ const fetchDashboard = useCallback(async (signal) => {
     try {
-      setLoading(true);
-
-      console.log("Client ID:", clientId);
-      console.log("Token:", token);
-
-      const response = await axios.get(
-        `${BASE_URL}/api/clients/${clientId}/dashboard`,
-        {
-          params: {
-            recent_limit: 5,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log("Dashboard Response:", response.data);
-
-      setData(response.data);
+        setLoading(true);
+        console.log("Client ID:", clientId);
+        console.log("Token:", token);
+        const response = await axios.get(
+            `${BASE_URL}/api/clients/${clientId}/dashboard`,
+            {
+                params: {
+                    recent_limit: 5,
+                },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                signal,
+            }
+        );
+        if (signal.aborted) return;
+        console.log("Dashboard Response:", response.data);
+        setData(response.data);
     } catch (error) {
-      console.error(
-        "Dashboard Error:",
-        error.response?.data || error.message
-      );
+        if (!signal.aborted) {
+            console.error("Dashboard Error:", error.response?.data || error.message);
+        }
     } finally {
-      setLoading(false);
+        if (!signal.aborted) {
+            setLoading(false);
+        }
     }
-  };
+}, [clientId, token]);
+useEffect(() => {
+    const controller = new AbortController();
+    Promise.resolve().then(() => {
+        if (!controller.signal.aborted) {
+            fetchDashboard(controller.signal);
+        }
+    });
+    return () => controller.abort();
+}, [fetchDashboard]);
+
   if (loading || !data) {
     return (
       <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
@@ -94,13 +99,13 @@ function Dashboard() {
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         <div className="xl:col-span-8">
           <InterviewTable
-            interviews={data.recently_completed_interviews}
+            interviews={data?.recently_completed_interviews ?? []}
           />
         </div>
 
         <div className="xl:col-span-4">
           <AnalyticsPanel
-            analytics={data.performance_analytics}
+            analytics={data?.performance_analytics ?? []}
           />
         </div>
       </section>

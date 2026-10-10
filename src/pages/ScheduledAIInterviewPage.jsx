@@ -1,35 +1,65 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Check } from "lucide-react";
 import { Mic, SkipForward, CheckCircle, Timer, Square } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import BASE_URL from "../config/api";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
+function Waveform({ isRecording, waveScale }) {
+    if (!isRecording) return null;
+
+    const bars = [28, 40, 22, 34, 18, 30, 42];
+
+    return (
+        <div className="flex items-center justify-center gap-1 mt-8 h-15">
+            {bars.map((height, index) => (
+                <div
+                    key={index}
+                    className="bg-[#3b6934] rounded-full"
+                    style={{
+                        width: "4px",
+                        height: `${height * waveScale}px`,
+                        transition: "height 0.15s ease-in-out",
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
 function ScheduledAIInterview() {
     const { state } = useLocation();
-    const interview = state?.interview;
+
     const preStartData = state?.preStartData;
     const interviewType = preStartData?.interview_type || "";
     const pageTitle = interviewType.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
     //const pageTitle = state?.preStartData?.page_title?.trim();
     const navigate = useNavigate();
-    const location = useLocation();
-    const apiQuestions = state?.questions || [];
+
     const clientId = state?.client_id || localStorage.getItem("client_id");
     const interview_id =
         state?.interview_id || state?.interview?.interview_id;
-    const technology_id = state?.technology_id;
+
     const [answers, setAnswers] = useState([]);
     const [isRecording, setIsRecording] = useState(false);
     const [waveScale, setWaveScale] = useState(1);
     const [timeLeft, setTimeLeft] = useState(119);
     const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
     const seconds = String(timeLeft % 60).padStart(2, "0");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [questions, setQuestions] = useState([]);
+
+    const [questions, setQuestions] = useState(() => {
+        const apiQuestions = state?.questions || [];
+        return apiQuestions.map((q, index) => ({
+            ...q,
+            question_id: q.id,
+            question_text: q.question,
+            attempted_status: index === 0 ? "current" : "pending",
+        }));
+    });
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const currentQuestion = questions[currentQuestionIndex];
+    const handleSubmitAnswerRef = useRef(null);
     const [loading, setLoading] = useState(false);
 
     const [popup, setPopup] = useState({
@@ -44,7 +74,7 @@ function ScheduledAIInterview() {
     const {
         transcript,
         resetTranscript,
-        browserSupportsSpeechRecognition,
+
     } = useSpeechRecognition();
 
     /*timer*/
@@ -60,7 +90,7 @@ function ScheduledAIInterview() {
                     setIsRecording(false);
 
                     setTimeout(() => {
-                        handleSubmitAnswer();
+                        handleSubmitAnswerRef.current?.();
                     }, 500);
 
                     return 0;
@@ -74,30 +104,11 @@ function ScheduledAIInterview() {
     }, [isRecording]);
 
     useEffect(() => {
-        if (!apiQuestions?.length) return;
+        if (!isRecording) return;
 
-        const formatted = apiQuestions.map((q, index) => ({
-            ...q,
-            question_id: q.id,
-            question_text: q.question,
-            attempted_status:
-                index === 0 ? "current" : "pending",
-        }));
-
-        setQuestions(formatted);
-        setCurrentQuestionIndex(0);
-    }, [apiQuestions]);
-
-    useEffect(() => {
-        let interval;
-
-        if (isRecording) {
-            interval = setInterval(() => {
-                setWaveScale(Math.random() * 0.8 + 0.6);
-            }, 150);
-        } else {
-            setWaveScale(1);
-        }
+        const interval = setInterval(() => {
+            setWaveScale(Math.random() * 0.8 + 0.6);
+        }, 150);
 
         return () => clearInterval(interval);
     }, [isRecording]);
@@ -105,6 +116,7 @@ function ScheduledAIInterview() {
     const startRecording = () => {
         resetTranscript();
         setTimeLeft(119);
+        setWaveScale(1);
 
         SpeechRecognition.startListening({
             continuous: true,
@@ -114,10 +126,11 @@ function ScheduledAIInterview() {
         setIsRecording(true);
     };
 
-    const stopRecording = () => {
+    const stopRecording = useCallback(() => {
         SpeechRecognition.stopListening();
         setIsRecording(false);
-    };
+        setWaveScale(1);
+    }, []);
 
     const handleStepClick = (index) => {
         stopRecording();
@@ -145,29 +158,7 @@ function ScheduledAIInterview() {
         setCurrentQuestionIndex(index);
     };
 
-    const Waveform = () => {
-        if (!isRecording) return null;
-
-        const bars = [28, 40, 22, 34, 18, 30, 42];
-
-        return (
-            <div className="flex items-center justify-center gap-1 mt-8 h-15">
-                {bars.map((height, index) => (
-                    <div
-                        key={index}
-                        className="bg-[#3b6934] rounded-full"
-                        style={{
-                            width: "4px",
-                            height: `${height * waveScale}px`,
-                            transition: "height 0.15s ease-in-out",
-                        }}
-                    />
-                ))}
-            </div>
-        );
-    };
-
-    const handleSubmitAnswer = () => {
+    const handleSubmitAnswer = useCallback(() => {
         if (!transcript.trim()) {
             setPopup({
                 show: true,
@@ -213,8 +204,6 @@ function ScheduledAIInterview() {
         // Mark current question completed
         updatedQuestions[currentQuestionIndex].attempted_status = "completed";
 
-
-
         const nextIndex = updatedQuestions.findIndex(
             (q, i) =>
                 i > currentQuestionIndex &&
@@ -232,7 +221,11 @@ function ScheduledAIInterview() {
         stopRecording();
         resetTranscript();
         setTimeLeft(119);
-    };
+    }, [answers, currentQuestionIndex, questions, resetTranscript, stopRecording, transcript]);
+
+    useEffect(() => {
+        handleSubmitAnswerRef.current = handleSubmitAnswer;
+    }, [handleSubmitAnswer]);
 
     const handleSkipQuestion = () => {
         setAnswers(prev => [
@@ -500,7 +493,7 @@ function ScheduledAIInterview() {
                                 </div>
 
                                 {/* Waveform */}
-                                <Waveform />
+                                <Waveform isRecording={isRecording} waveScale={waveScale} />
 
                                 {/* Timer */}
                                 <div className="mt-12 flex flex-col items-center">

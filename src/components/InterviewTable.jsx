@@ -9,7 +9,7 @@ function InterviewTable({ interviews = [] }) {
 
   const clientId = localStorage.getItem("client_id");
   const token = localStorage.getItem("token");
-  const [popup, setPopup] = useState({
+  const [ setPopup] = useState({
     show: false,
     message: "",
     type: "", // success | error
@@ -93,49 +93,71 @@ function InterviewTable({ interviews = [] }) {
           </thead>
 
           <tbody>
-            {interviews.map((item, index) => (
-              <tr
-                key={`${item.date}-${index}`}
-                className="border-t border-[#dee2e6] hover:bg-[#f8f9fa] transition-colors"
-              >
-                <td className="px-6 py-5 font-semibold text-[#230804] text-[16px]">
-                  {item.date}
-                </td>
+            {interviews.length > 0 ? (
+              interviews.map((item, index) => (
+                <tr
+                  key={`${item.date}-${index}`}
+                  className="border-t border-[#dee2e6] hover:bg-[#f8f9fa] transition-colors"
+                >
+                  <td className="px-6 py-5 font-semibold text-[#230804] text-[16px]">
+                    {item.date}
+                  </td>
 
-                <td className="px-6 py-5 text-[#6c757d] text-[16px]">
-                  {item.mode_label}
-                </td>
+                  <td className="px-6 py-5 text-[#6c757d] text-[16px]">
+                    {item.mode_label}
+                  </td>
 
-                <td className="px-6 py-5">
-                  <span
-                    className={`
-                      px-3 py-1 text-xs font-bold border rounded-sm
-                      ${item.score >= 70
-                        ? "bg-green-50 text-[#2d5a27] border-green-200"
-                        : "bg-red-50 text-red-700 border-red-200"
-                      }
-                    `}
-                  >
-                    {item.score_display}
-                  </span>
-                </td>
+                  <td className="px-6 py-5">
+                    <span
+                      className={`
+                        px-3 py-1 text-xs font-bold border rounded-sm
+                       ${item.score >= 70
+                          ? "bg-green-50 text-[#2d5a27] border-green-200"
+                          : "bg-red-50 text-red-700 border-red-200"
+                        }
+                     `}
+                    >
+                      {item.score_display}
+                    </span>
+                  </td>
 
-                <td className="px-6 py-5 text-left">
-                  <button
-                    onClick={() => {
-                      const params = new URLSearchParams(
-                        item.insights_url.split("?")[1]
-                      );
-                      const scorecardId = params.get("scorecard_id");
-                      handleViewInsights(scorecardId);
-                    }}
-                    className="inline-flex items-center gap-1 text-[#2d5a27] cursor-pointer font-bold text-sm hover:underline"
-                  >
-                    View Insights
-                  </button>
+                  <td className="px-6 py-5 text-left">
+                    <button
+                      onClick={() => {
+                        const params = new URLSearchParams(
+                          item.insights_url.split("?")[1]
+                        );
+                        const scorecardId = params.get("scorecard_id");
+                        handleViewInsights(scorecardId);
+                      }}
+                      className="inline-flex items-center gap-1 text-[#2d5a27] cursor-pointer font-bold text-sm hover:underline"
+                    >
+                      View Insights
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="px-6 py-12">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-[#f8f9fa] border border-[#dee2e6] flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined text-[#6c757d] text-[24px]">
+                        assignment
+                      </span>
+                    </div>
+
+                    <h3 className="text-[16px] font-semibold text-[#230804]">
+                      No interviews completed yet
+                    </h3>
+
+                    <p className="mt-1 text-[14px] text-[#6c757d]">
+                      Complete an interview to see your results and insights here.
+                    </p>
+                  </div>
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

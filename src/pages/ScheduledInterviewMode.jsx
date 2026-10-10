@@ -1,8 +1,7 @@
-import React from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronRight, Clock3, ShieldCheck, CircleCheck, ArrowRight, Info, FileText } from "lucide-react";
+import {  Clock3, ShieldCheck, CircleCheck, Info, } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../config/api";

@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
-import { Brain, ClipboardCheck, TrendingUp, Quote, Target, Flag, BadgeCheck, Sparkles, ChevronLeft, ChevronRight, CheckCircle2, Check, AlertTriangle, ArrowLeft, Search, Bell, HelpCircle, Clock, Globe, FileText } from "lucide-react";
+import { Brain, ClipboardCheck, TrendingUp, Quote,  Flag,  ChevronLeft, ChevronRight, CheckCircle2, Check, AlertTriangle,  FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
 
-function ScheduledInterviewFeedback({ data = null }) {
+function ScheduledInterviewFeedback() {
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state;
-    const [loading, setLoading] = useState(false);
+   const [loading] = useState(false);
     const scorecard = location.state?.scorecard;
     console.log("Scorecard:", scorecard);
     const interviewType = state?.preStartData?.interview_type || "";
     const pageTitle = interviewType
         .replace(/_/g, " ")
         .replace(/\b\w/g, c => c.toUpperCase());
-    const questions = scorecard?.question_stepper || [];
     // View state: 'overall' or 'question'
     const [viewMode, setViewMode] = useState('overall');
     const [selectedQuestionId, setSelectedQuestionId] = useState(1);
-    const currentQuestionIndex = selectedQuestionId - 1;
     const technicalMetrics = [
         {
             name: "Questions",
