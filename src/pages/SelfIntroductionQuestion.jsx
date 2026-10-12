@@ -20,6 +20,7 @@ function Waveform({ isRecording, waveScale }) {
                     className="bg-[#3b6934] rounded-full"
                     style={{
                         width: "4px",
+                        // base height * random scale = dancing effect
                         height: `${height * waveScale}px`,
                         transition: "height 0.15s ease-in-out",
                     }}
@@ -31,25 +32,31 @@ function Waveform({ isRecording, waveScale }) {
 
 function SelfIntroductionQuestion() {
     const location = useLocation();
+    // modal opens only if previous page sent showBeginAssessmentModal in router state
     const [showModal, setShowModal] = useState(() =>
         Boolean(location.state?.showBeginAssessmentModal)
     );
     const navigate = useNavigate();
     const [isRecording, setIsRecording] = useState(false);
     const [waveScale, setWaveScale] = useState(1);
+    // seconds left for the question (119 = about 2 min)
     const [timeLeft, setTimeLeft] = useState(119);
+    // blocks double submit (e.g. button click + timer auto submit)
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // questions can come from router state (when coming back from feedback page / retry)
     const [questions, setQuestions] = useState(() =>
         Array.isArray(location.state?.questions)
             ? location.state.questions
             : []
     );
+    // start index: next question -> retry question -> first question
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() =>
         location.state?.nextQuestionIndex ??
         location.state?.retryQuestionIndex ??
         0
     );
     const currentQuestion = questions[currentQuestionIndex];
+    // ref always holds latest handleSubmitAnswer (used by timer auto-submit)
     const handleSubmitAnswerRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [popup, setPopup] = useState({
@@ -57,10 +64,12 @@ function SelfIntroductionQuestion() {
         message: "",
         type: "", // success | error
     });
+    // transcript = live speech-to-text result
     const {
         transcript,
         resetTranscript,
     } = useSpeechRecognition()
+    // random wave scale every 150ms while recording (only visual effect)
     useEffect(() => {
         if (!isRecording) return;
         const interval = setInterval(() => {
@@ -68,16 +77,19 @@ function SelfIntroductionQuestion() {
         }, 150);
         return () => clearInterval(interval);
     }, [isRecording]);
+    // countdown timer, runs only while recording
     useEffect(() => {
         if (!isRecording) return;
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
+                // time over -> stop mic and auto submit
                 if (prev <= 1) {
                     clearInterval(timer);
                     SpeechRecognition.stopListening();
                     setIsRecording(false);
                     setWaveScale(1);
                     // Auto submit when time ends
+                    // small delay so last words get captured
                     setTimeout(() => {
                         handleSubmitAnswerRef.current?.();
                     }, 500);
@@ -86,6 +98,7 @@ function SelfIntroductionQuestion() {
                 return prev - 1;
             });
         }, 1000);
+        // cleanup so multiple intervals don't run
         return () => clearInterval(timer);
     }, [isRecording]);
     const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
@@ -93,6 +106,7 @@ function SelfIntroductionQuestion() {
     const startRecording = () => {
         resetTranscript();
         setWaveScale(1);
+        // continuous: true = keeps listening even after pauses
         SpeechRecognition.startListening({
             continuous: true,
             language: "en-US",
@@ -118,6 +132,7 @@ function SelfIntroductionQuestion() {
     }, [location.state, resetTranscript]);
     // Get questions for the current client.
     const client_id = localStorage.getItem("client_id");
+    // called when user clicks proceed in the Begin Assessment modal -> loads questions from API
     const handleStartInterview = async () => {
         try {
             setLoading(true);
@@ -125,6 +140,7 @@ function SelfIntroductionQuestion() {
                 `${BASE_URL}/questions/clients/${client_id}/self-introduction-questions`
             );
             const data = await response.json();
+            // take the most specific error message from backend
             if (!response.ok) {
                 throw new Error(
                     data.message ||
@@ -134,10 +150,12 @@ function SelfIntroductionQuestion() {
                 );
             }
             console.log("Self Introduction Questions fetched", data);
+            // keep only enabled questions, sorted by display_order
             const enabledQuestions = (data.questions || [])
                 .filter((question) => question.status === "enabled")
                 .sort((a, b) => a.display_order - b.display_order);
             setQuestions(enabledQuestions);
+            // always start from first question
             setCurrentQuestionIndex(0);
             setShowModal(false);
             setPopup({
@@ -164,11 +182,13 @@ function SelfIntroductionQuestion() {
     };
     //skip question logic
     const handleSkipQuestion = () => {
+        // stop mic and clear everything for the next question
         stopRecording();
         resetTranscript();
         setTimeLeft(119);
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
+        // find next question which is not completed/skipped
         const nextIndex = updatedQuestions.findIndex(
             (q, i) =>
                 i > currentQuestionIndex &&
@@ -180,6 +200,7 @@ function SelfIntroductionQuestion() {
             setCurrentQuestionIndex(nextIndex);
             setQuestions(updatedQuestions);
         } else {
+            // no next question -> this was the last one, show warning popup
             setQuestions(updatedQuestions);
             setPopup({
                 show: true,
@@ -190,6 +211,7 @@ function SelfIntroductionQuestion() {
     };
     //submit answer api call
    const handleSubmitAnswer = useCallback(async () => {
+        // already submitting -> ignore (prevents double API call)
         if (isSubmitting) return;
         setIsSubmitting(true);
         setLoading(true);
@@ -197,6 +219,7 @@ function SelfIntroductionQuestion() {
             const currentQuestion = questions[currentQuestionIndex];
             console.log("Current Question:", currentQuestion);
             console.log("Question ID:", currentQuestion?.question_id);
+            // send the spoken answer for this question to the backend
             const response = await fetch(
                 `${BASE_URL}/questions/clients/${client_id}/questions/${currentQuestion.question_id}/submit-answer`,
                 {
@@ -211,6 +234,7 @@ function SelfIntroductionQuestion() {
             );
             const data = await response.json();
             console.log("Submit Response:", data);
+            // API error -> show message and stop (no navigation)
             if (!response.ok) {
                 setPopup({
                     show: true,
@@ -232,6 +256,8 @@ function SelfIntroductionQuestion() {
                     "Answer submitted successfully",
                 type: "success",
             });
+            // wait 1 sec so success popup is visible, then go to feedback page
+            // questions + currentQuestionIndex are passed so the feedback page can come back to the next question
             setTimeout(() => {
                 navigate("/feedback", {
                     state: {
@@ -246,6 +272,7 @@ function SelfIntroductionQuestion() {
         } catch (error) {
             console.error("Submit failed:", error);
                 } finally {
+            // always release loader and submit lock
             setLoading(false);
             setIsSubmitting(false);
         }
@@ -257,6 +284,7 @@ function SelfIntroductionQuestion() {
         transcript,
         navigate,
     ]);
+    // keep ref updated with latest function (avoids stale values in timer auto-submit)
     useEffect(() => {
         handleSubmitAnswerRef.current = handleSubmitAnswer;
     }, [handleSubmitAnswer]);
@@ -322,6 +350,7 @@ function SelfIntroductionQuestion() {
                                     </span>
                                 </div>
                                 <div className="w-32 h-1 bg-[#f1f4f9] rounded-full overflow-hidden">
+                                    {/* progress bar width based on time left */}
                                     <div
                                         className="h-full bg-[#3b6934] transition-all duration-1000"
                                         style={{
@@ -343,6 +372,7 @@ function SelfIntroductionQuestion() {
                         </div>
                         {/* Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                            {/* toggle: start recording / stop recording */}
                             <button
                                 onClick={() =>
                                     isRecording
@@ -367,6 +397,7 @@ function SelfIntroductionQuestion() {
                                     </>
                                 )}
                             </button>
+                            {/* skip is disabled when the question has no attempted_status */}
                             <button
                                 onClick={handleSkipQuestion}
                                 disabled={!currentQuestion?.attempted_status}
@@ -380,6 +411,7 @@ function SelfIntroductionQuestion() {
                                 <SkipForward size={18} />
                                 Skip Question
                             </button>
+                            {/* sends answer to API, then goes to feedback page */}
                             <button
                                 onClick={handleSubmitAnswer}
                                 className="w-full flex-1 bg-[#3b6934] hover:bg-[#2f5a29] text-white py-4 rounded-lg flex items-center justify-center gap-2 font-bold uppercase">
@@ -407,6 +439,7 @@ function SelfIntroductionQuestion() {
                                     </p>
                                 </div>
                                 {/* Transcript */}
+                                {/* live speech text + blinking cursor while recording */}
                                 <div className="space-y-8">
                                     <p className="text-[#3b6934] text-base sm:text-lg leading-7 sm:leading-9 border-b border-[#bcf1ad] pb-3">
                                         {transcript || "Start speaking to see live transcription..."}
@@ -422,12 +455,14 @@ function SelfIntroductionQuestion() {
                     </div>
                 </div>
             </div>
+            {/* modal shown before the interview starts; Proceed loads the questions */}
             <BeginAssessmentModal
                 open={showModal}
                 onClose={() => setShowModal(false)}
                 onProceed={handleStartInterview}
                 loading={loading}
             />
+            {/* popup for success / error / warning messages */}
             {
                 popup.show && (
                     <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-2">

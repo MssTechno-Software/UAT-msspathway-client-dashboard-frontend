@@ -25,10 +25,7 @@ const A = (n, at = 0, d = 0.5) => ({
 // Reusable status pill for off/on states.
 const Pill = ({ children, ok }) => (
   <span
-    className={`block w-[92px] text-center text-xs font-bold rounded-full py-1.5 ${ok
-        ? "bg-[#3f7a45] text-white"
-        : "bg-[#e9e3dc] text-[#3d1a10]"
-      }`}
+    className={`block w-[92px] text-center text-xs font-bold rounded-full py-1.5 ${ok ? "bg-[#3f7a45] text-white" : "bg-[#e9e3dc] text-[#3d1a10]"}`}
   >
     {children}
   </span>
@@ -40,7 +37,6 @@ const Toggle = ({ at, off, on }) => (
     <span style={A("pm-hide", at, 0.25)}>
       {off}
     </span>
-
     <span
       className="absolute inset-0"
       style={A("pm-show", at, 0.4)}
@@ -76,10 +72,10 @@ const Win = ({
   onExpand,
 }) => (
   <div
-    className={`relative w-full rounded-2xl bg-white text-[#3d1a10] shadow-2xl overflow-hidden transition-all duration-500 ${expanded ? "max-w-3xl" : "max-w-md"
-      }`}
+    className={`relative w-full rounded-2xl bg-white text-[#3d1a10] shadow-2xl overflow-hidden transition-all duration-500 ${expanded ? "max-w-3xl" : "max-w-md"}`}
     style={A("pm-up", 0.1)}
   >
+
     {/* Window header */}
     <div className="flex items-center gap-2 px-4 py-2.5 bg-[#f4f0ea] border-b border-[#e7e0d8]">
       <span className="flex gap-1.5">
@@ -87,13 +83,11 @@ const Win = ({
         <i className="w-2.5 h-2.5 rounded-full bg-[#f2c14e]" />
         <i className="w-2.5 h-2.5 rounded-full bg-[#7bc47f]" />
       </span>
-
       <I
         size={15}
         style={{ color }}
         className="ml-2"
       />
-
       <span className="text-xs font-semibold">
         {title}
       </span>
@@ -102,16 +96,8 @@ const Win = ({
       <button
         type="button"
         onClick={onExpand}
-        aria-label={
-          expanded
-            ? "Collapse card"
-            : "Expand card"
-        }
-        title={
-          expanded
-            ? "Collapse"
-            : "Expand"
-        }
+        aria-label={expanded ? "Collapse card" : "Expand card"}
+        title={expanded ? "Collapse" : "Expand"}
         className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center text-[#3d1a10] hover:bg-black/5 transition-all duration-200 hover:scale-105"
       >
         {expanded ? (
@@ -124,10 +110,7 @@ const Win = ({
 
     {/* Card content */}
     <div
-      className={`p-4 space-y-2.5 transition-all duration-500 ${expanded
-          ? "md:p-6 lg:p-8"
-          : ""
-        }`}
+      className={`p-4 space-y-2.5 transition-all duration-500 ${expanded ? "md:p-6 lg:p-8" : ""}`}
     >
       {children}
     </div>
@@ -153,17 +136,14 @@ const Row = ({
       size={22}
       style={{ color }}
     />
-
     <div className="flex-1 leading-tight">
       <div className="text-sm font-semibold">
         {label}
       </div>
-
       <div className="text-[11px] text-[#7a6a62]">
         {sub}
       </div>
     </div>
-
     <Toggle
       at={at}
       off={<Pill>{off}</Pill>}
@@ -186,7 +166,6 @@ const Chat = ({ items }) => (
         >
           <b>Recruiter:</b> {q}
         </div>
-
         <div
           className="max-w-[82%] ml-auto rounded-2xl rounded-br-sm bg-[#3f7a45] text-white px-3 py-2 text-[13px]"
           style={A("pm-up", i * 2 + 0.9)}
@@ -217,17 +196,14 @@ const Mail = ({
     <span className="w-7 h-7 rounded-full bg-[#e4eee3] text-[#3f7a45] text-xs font-bold flex items-center justify-center">
       {from[0]}
     </span>
-
     <div className="flex-1 leading-tight min-w-0">
       <div className="text-[13px] font-semibold truncate">
         {from}
       </div>
-
       <div className="text-[11px] text-[#7a6a62] truncate">
         {subj}
       </div>
     </div>
-
     {label && (
       <span
         className="text-[10px] font-bold bg-[#3f7a45] text-white rounded px-2 py-0.5"
@@ -246,7 +222,6 @@ const scenes = [
     title: "Build a responsive LinkedIn presence",
     goal: "A profile that stays active, credible and responsive.",
     bg: "#3f7a45",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FaLinkedin}
@@ -263,7 +238,6 @@ const scenes = [
           on="Primary"
           at={1}
         />
-
         <Row
           icon={FiUsers}
           label="Connections"
@@ -273,7 +247,6 @@ const scenes = [
           at={2.6}
           delay={0.15}
         />
-
         <Row
           icon={FaRegThumbsUp}
           label="Daily activity"
@@ -283,7 +256,6 @@ const scenes = [
           at={4.2}
           delay={0.3}
         />
-
         <Row
           icon={FiMessageCircle}
           label="Response time"
@@ -302,7 +274,6 @@ const scenes = [
     title: "Keep the inbox under control",
     goal: "Organize what matters, remove what does not.",
     bg: "#3d1a10",
-
     view: (expanded, onExpand) => (
       <Win
         icon={SiGmail}
@@ -317,26 +288,22 @@ const scenes = [
           label="Recruiters"
           at={1}
         />
-
         <Mail
           from="Weekly Newsletter"
           subj="Top 10 deals this week"
           out={3}
         />
-
         <Mail
           from="Recruiter · Startup X"
           subj="Follow-up call"
           label="Follow-ups"
           at={1.8}
         />
-
         <Mail
           from="Promotions"
           subj="50% off, today only"
           out={3.5}
         />
-
         <div
           className="rounded-lg bg-[#e4eee3] text-[#3f7a45] text-xs font-bold px-3 py-2.5"
           style={A("pm-up", 4.8)}
@@ -352,7 +319,6 @@ const scenes = [
     title: "Elevator pitch",
     goal: "Introduce yourself clearly, without overloading the listener.",
     bg: "#3f7a45",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiMic}
@@ -381,15 +347,11 @@ const scenes = [
           <div
             key={c}
             className="rounded-xl bg-[#faf8f5] border border-[#e7e0d8] p-3"
-            style={A(
-              "pm-up",
-              at - 0.3
-            )}
+            style={A("pm-up", at - 0.3)}
           >
             <div className="text-[10px] font-bold tracking-[2px] text-[#3f7a45] mb-1">
               {c.toUpperCase()}
             </div>
-
             <Type
               text={t}
               at={at}
@@ -406,7 +368,6 @@ const scenes = [
     title: "Keep your professional links ready",
     goal: "Current, consistent and easy to share.",
     bg: "#3d1a10",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiGlobe}
@@ -424,7 +385,6 @@ const scenes = [
           on="Ready"
           at={1.2}
         />
-
         <Row
           icon={FaGithub}
           color="#24292f"
@@ -435,7 +395,6 @@ const scenes = [
           at={2.8}
           delay={0.15}
         />
-
         <Row
           icon={FiGlobe}
           label="Portfolio"
@@ -445,7 +404,6 @@ const scenes = [
           at={4.4}
           delay={0.3}
         />
-
         <div
           className="rounded-lg bg-[#e4eee3] text-[#3f7a45] text-xs font-bold px-3 py-2.5"
           style={A("pm-up", 5.8)}
@@ -461,7 +419,6 @@ const scenes = [
     title: "Understand the terminology",
     goal: "Know these terms before discussing an opportunity.",
     bg: "#3f7a45",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiMail}
@@ -484,22 +441,17 @@ const scenes = [
             <div
               key={a}
               className="rounded-lg border border-[#e7e0d8] bg-[#faf8f5] px-3 py-2"
-              style={A(
-                "pm-show",
-                0.4 + i * 0.4
-              )}
+              style={A("pm-show", 0.4 + i * 0.4)}
             >
               <div className="text-sm font-extrabold text-[#3f7a45]">
                 {a}
               </div>
-
               <div className="text-[11px] text-[#7a6a62]">
                 {b}
               </div>
             </div>
           ))}
         </div>
-
         <div
           className="rounded-lg bg-[#f1e4de] text-xs font-semibold px-3 py-2.5"
           style={A("pm-up", 4.2)}
@@ -515,7 +467,6 @@ const scenes = [
     title: "Start-up & relocation questions",
     goal: "Keep it positive, specific and clear.",
     bg: "#3d1a10",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiMessageCircle}
@@ -545,7 +496,6 @@ const scenes = [
     title: "Questions recruiters commonly ask",
     goal: "A short, honest answer for each.",
     bg: "#3f7a45",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiMessageCircle}
@@ -583,7 +533,6 @@ const scenes = [
     title: "Before every recruiter call",
     goal: "Run this list so you always show up ready.",
     bg: "#3d1a10",
-
     view: (expanded, onExpand) => (
       <Win
         icon={FiCheck}
@@ -617,7 +566,6 @@ const scenes = [
                 </i>
               }
             />
-
             {t}
           </div>
         ))}
@@ -630,7 +578,6 @@ const scenes = [
     title: "Close the conversation professionally",
     goal: "Send a concise thanks message.",
     bg: "#3f7a45",
-
     view: (expanded, onExpand) => (
       <Win
         icon={SiGmail}
@@ -644,43 +591,33 @@ const scenes = [
           <b className="text-[#3d1a10]">
             [Recruiter name]
           </b>
-
           <br />
-
           Subject:{" "}
           <b className="text-[#3d1a10]">
             Thank you · [Role] interview
           </b>
         </div>
-
         <div className="text-[13px] leading-6 min-h-[120px]">
           <Type
             text="Hi [Recruiter name],"
             at={0.5}
           />
-
           <br />
-
           <Type
             text="Thank you for your time today. I enjoyed the"
             at={1.5}
           />
-
           <br />
-
           <Type
             text="technical conversation and remain very interested."
             at={3}
           />
-
           <br />
-
           <Type
             text="Best regards, [Your name]"
             at={4.6}
           />
         </div>
-
         <Toggle
           at={6.2}
           off={
@@ -759,31 +696,23 @@ const POINTS = [
 ];
 
 function PreMarketingSlider() {
+  // Track the selected scene and whether automatic playback is running.
   const [active, setActive] = useState(0);
-
+  // Controls both the play/pause button and the active progress animation.
   const [playing, setPlaying] = useState(true);
-
-
   // This state stays true when the scene changes.
   const [expanded, setExpanded] = useState(false);
-
   const s = scenes[active];
-
   // Next scene.
+  // Advance to the next scene and wrap around after the final scene.
   // DO NOT reset expanded here.
   const next = () => {
-    setActive(
-      (a) => (a + 1) % scenes.length
-    );
+    setActive((a) => (a + 1) % scenes.length);
   };
-
   // Expand / collapse only the right-side card.
   const toggleExpanded = () => {
-    setExpanded(
-      (value) => !value
-    );
+    setExpanded((value) => !value);
   };
-
   return (
     <div className="w-full mb-8">
       <style>{`
@@ -791,62 +720,51 @@ function PreMarketingSlider() {
           from {
             width: 0;
           }
-
           to {
             width: 100%;
           }
         }
-
         @keyframes pm-up {
           from {
             opacity: 0;
             transform: translateY(16px);
           }
-
           to {
             opacity: 1;
             transform: none;
           }
         }
-
         @keyframes pm-show {
           from {
             opacity: 0;
             transform: scale(.85);
           }
-
           to {
             opacity: 1;
             transform: none;
           }
         }
-
         @keyframes pm-hide {
           from {
             opacity: 1;
           }
-
           to {
             opacity: 0;
           }
         }
-
         @keyframes pm-type {
           from {
             max-width: 0;
           }
-
           to {
             max-width: 100%;
           }
         }
-
         @keyframes pm-out {
           from {
             opacity: 1;
             max-height: 60px;
           }
-
           to {
             opacity: 0;
             max-height: 0;
@@ -865,6 +783,7 @@ function PreMarketingSlider() {
           background: s.bg,
         }}
       >
+
         {/* Top heading */}
         <div className="absolute top-5 left-8 md:left-12 text-[11px] font-bold tracking-[3px] text-white/60 z-10">
           MSSTECHNO · PRE-MARKETING READINESS GUIDE
@@ -873,11 +792,9 @@ function PreMarketingSlider() {
         {/* Main content */}
         <div
           key={active}
-          className={`relative z-10 grid gap-8 items-center px-8 md:px-12 pt-16 pb-24 min-h-[500px] transition-all duration-500 ${expanded
-              ? "grid-cols-1"
-              : "md:grid-cols-[1fr_1.1fr]"
-            }`}
+          className={`relative z-10 grid gap-8 items-center px-8 md:px-12 pt-16 pb-24 min-h-[500px] transition-all duration-500 ${expanded ? "grid-cols-1" : "md:grid-cols-[1fr_1.1fr]"}`}
         >
+
           {/* LEFT SIDE */}
           {!expanded && (
             <div>
@@ -887,81 +804,51 @@ function PreMarketingSlider() {
               >
                 {s.tag}
               </div>
-
               <h2
                 className="text-3xl lg:text-4xl font-bold leading-tight"
-                style={A(
-                  "pm-up",
-                  0.15,
-                  0.6
-                )}
+                style={A("pm-up", 0.15, 0.6)}
               >
                 {s.title}
               </h2>
-
               <p
                 className="mt-3 text-white/80 text-base max-w-md"
-                style={A(
-                  "pm-up",
-                  0.4,
-                  0.6
-                )}
+                style={A("pm-up", 0.4, 0.6)}
               >
                 {s.goal}
               </p>
-
               <ul className="mt-6 space-y-3 border-t border-white/20 pt-5">
-                {POINTS[active].map(
-                  (pt, i) => (
-                    <li
-                      key={pt}
-                      className="flex items-start gap-3 text-[15px] text-white/95"
-                      style={A(
-                        "pm-up",
-                        0.8 + i * 0.6
-                      )}
-                    >
-                      <span className="w-5 h-5 mt-0.5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                        <FiCheck size={12} />
-                      </span>
-
-                      {pt}
-                    </li>
-                  )
-                )}
+                {POINTS[active].map((pt, i) => (
+                  <li
+                    key={pt}
+                    className="flex items-start gap-3 text-[15px] text-white/95"
+                    style={A("pm-up", 0.8 + i * 0.6)}
+                  >
+                    <span className="w-5 h-5 mt-0.5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <FiCheck size={12} />
+                    </span>
+                    {pt}
+                  </li>
+                ))}
               </ul>
             </div>
           )}
 
           {/* RIGHT CARD */}
           <div
-            className={`flex justify-center w-full transition-all duration-500 ${expanded
-                ? "px-2 md:px-8 lg:px-16"
-                : ""
-              }`}
+            className={`flex justify-center w-full transition-all duration-500 ${expanded ? "px-2 md:px-8 lg:px-16" : ""}`}
           >
-            {s.view(
-              expanded,
-              toggleExpanded
-            )}
+            {s.view(expanded, toggleExpanded)}
           </div>
         </div>
 
         {/* Bottom slider controls */}
         <div className="absolute z-20 left-0 right-0 bottom-0 px-6 md:px-10 pb-5 flex items-center gap-4">
+
           {/* Play / pause */}
           <button
             type="button"
-            onClick={() =>
-              setPlaying(
-                (p) => !p
-              )
-            }
-            aria-label={
-              playing
-                ? "Pause"
-                : "Play"
-            }
+            onClick={() => setPlaying((p) => !p)}
+            aria-label={playing ? "Pause" : "Play"}
             className="w-9 h-9 shrink-0 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"
           >
             {playing ? (
@@ -978,9 +865,7 @@ function PreMarketingSlider() {
                 <button
                   key={sc.tag}
                   type="button"
-                  onClick={() =>
-                    setActive(i)
-                  }
+                  onClick={() => setActive(i)}
                   title={sc.title}
                   className="flex-1 py-2"
                 >

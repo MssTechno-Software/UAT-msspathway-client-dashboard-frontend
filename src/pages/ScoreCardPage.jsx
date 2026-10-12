@@ -16,17 +16,21 @@ function ScoreCardPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
+    // fromDate/toDate = only what user types in the inputs (no API call yet)
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
     const [invalidPopup, setInvalidPopup] = useState(false);
     const [popupTitle, setPopupTitle] = useState("Invalid Date Range");
+    // applied dates = the ones actually sent to API (set only when Search is clicked)
     const [appliedFromDate, setAppliedFromDate] = useState("");
     const [appliedToDate, setAppliedToDate] = useState("");
+    // increasing this number re-runs the useEffect, even if the filters are the same
     const [refreshKey, setRefreshKey] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
     const client_id = localStorage.getItem("client_id");
     // Fetches scorecards whenever pagination or applied date filters change.
     useEffect(() => {
+        // ignore old responses if the effect re-runs or component unmounts
         let cancelled = false;
         const loadScorecards = async () => {
             try {
@@ -36,6 +40,7 @@ function ScoreCardPage() {
                         params: {
                             page,
                             page_size: 10,
+                            // empty date -> undefined -> param is not sent at all
                             from_date: appliedFromDate || undefined,
                             to_date: appliedToDate || undefined,
                         },
@@ -72,6 +77,7 @@ function ScoreCardPage() {
             const response = await axios.get(
                 `${BASE_URL}/api/clients/${client_id}/scorecards/${scorecardId}`
             );
+            // scorecard data is passed to the report page through router state
             navigate("/Interview-Performance-Report", {
                 state: {
                     scorecard: response.data.scorecard,
@@ -150,6 +156,7 @@ function ScoreCardPage() {
                 </div>
                 <button
                     onClick={() => {
+                        // validation: From date must not be after To date
                         if (fromDate && toDate && fromDate > toDate) {
                             setPopupTitle("Invalid Date Range");
                             setErrorMessage("From Date cannot be greater than To Date.");
@@ -157,9 +164,12 @@ function ScoreCardPage() {
                             return;
                         }
                         setLoading(true);
+                        // new search always starts from page 1
                         setPage(1);
+                        // typed dates -> applied dates, this is what triggers the useEffect
                         setAppliedFromDate(fromDate);
                         setAppliedToDate(toDate);
+                        // makes sure it re-fetches even if same filters are searched again
                         setRefreshKey((prev) => prev + 1);
                     }}
                     className="bg-[#2e5d2d] text-white h-10 px-6 rounded font-medium flex items-center gap-2 cursor-pointer"
@@ -169,6 +179,7 @@ function ScoreCardPage() {
                 </button>
                 <button
                     onClick={() => {
+                        // reset both the inputs and the applied filters, then reload full list
                         setFromDate("");
                         setToDate("");
                         setLoading(true);
@@ -200,6 +211,7 @@ function ScoreCardPage() {
                         </tr>
                     </thead>
                     <tbody>
+                        {/* no data -> "No scorecards found" row, otherwise one row per scorecard */}
                         {scorecards.length === 0 ? (
                             <tr>
                                 <td colSpan={4} className="text-center py-8 text-gray-500">
@@ -223,6 +235,7 @@ function ScoreCardPage() {
                                     <td>
                                         <div className="w-40">
                                             <div className="w-full h-2 bg-gray-200 rounded-full">
+                                                {/* bar width = score % (score is out of 100) */}
                                                 <div
                                                     className="h-2 rounded-full bg-[#2f6c2f]"
                                                     style={{
@@ -253,6 +266,7 @@ function ScoreCardPage() {
                     <div className="text-sm text-gray-500">
                         Showing {scorecards.length} of {totalRecords} scorecards
                     </div>
+                    {/* pagination: changing page triggers the useEffect, setLoading(true) shows the loader first */}
                     <div className="flex items-center gap-2">
                         <button
                             disabled={page === 1}

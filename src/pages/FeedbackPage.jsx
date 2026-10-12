@@ -12,6 +12,7 @@ import { FiLoader } from "react-icons/fi";
 function FeedbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Read the feedback and interview details passed through route state.
   const feedbackData = location.state?.feedbackData;
   const transcript = location.state?.transcript;
   const question = location.state?.question;
@@ -91,6 +92,7 @@ function FeedbackPage() {
 
                 <button
                   onClick={() => {
+                    // Show the loader before navigating back to retry the current question.
                     setLoading(true);
                     setTimeout(() => {
                       navigate("/self-introduction", {
@@ -117,6 +119,7 @@ function FeedbackPage() {
                   Comprehensive Strengths
                 </h3>
 
+                {/* Render each strength provided by the evaluation response. */}
                 <ul>
                   {feedbackData?.evaluation?.strengths?.map((strength, index) => (
                     <li key={index}>• {strength}</li>
@@ -142,6 +145,7 @@ function FeedbackPage() {
                   Improvement Areas
                 </h3>
 
+                {/* Display the improvement suggestions returned by the evaluation. */}
                 <ul className="space-y-3 text-[#0b1c30]">
                   {feedbackData?.evaluation?.improvement_areas?.map((item, index) => (
                     <li key={index}>• {item}</li>
@@ -175,7 +179,7 @@ function FeedbackPage() {
                   </p>
                 </div>
 
-                {/* Transcript */}
+                {/* Display the user's recorded interview transcript. */}
                 <div className="space-y-8">
                   <p className="text-[#0b1c30] text-sm sm:text-base lg:text-lg leading-7 lg:leading-10">
                     {transcript}
@@ -192,9 +196,11 @@ function FeedbackPage() {
         {/* Next Question */}
         <button
           onClick={() => {
+            // Show the loader before moving to the next question or finishing the interview.
             setLoading(true);
 
             setTimeout(() => {
+              // Continue to the next question when more questions remain.
               if (currentQuestionIndex < questions.length - 1) {
                 navigate("/self-introduction", {
                   state: {
@@ -203,6 +209,7 @@ function FeedbackPage() {
                   },
                 });
               } else {
+                // Return to interview modes after the final question.
                 navigate("/interview-modes");
               }
             }, 500);

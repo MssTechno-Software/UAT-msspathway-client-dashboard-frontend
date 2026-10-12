@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
+// Reusable pagination component for page navigation and row-count selection.
 const Pagination = ({
   page = 1,
   totalPages = 1,
@@ -7,6 +7,7 @@ const Pagination = ({
   onPageChange,
   onPageSizeChange,
 }) => {
+  // Generate the first three page numbers and the last page when needed.
   const renderPages = () => {
     const pages = [];
 
@@ -30,6 +31,7 @@ const Pagination = ({
       {/* Left */}
       <select
         value={pageSize}
+        // Notify the parent when the selected number of rows changes.
         onChange={(e) => onPageSizeChange(Number(e.target.value))}
         className="border border-gray-300 text-[11px] px-2 py-1 rounded bg-white"
       >
@@ -42,6 +44,7 @@ const Pagination = ({
       <div className="flex items-center gap-2">
 
         <button
+          // Disable previous-page navigation on the first page.
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
           className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40"
@@ -60,6 +63,7 @@ const Pagination = ({
           ) : (
             <button
               key={item}
+              // Highlight the current page and notify the parent when another page is selected.
               onClick={() => onPageChange(item)}
               className={`w-7 h-7 rounded text-xs font-medium
               ${
@@ -74,6 +78,7 @@ const Pagination = ({
         )}
 
         <button
+          // Disable next-page navigation when the last page is reached.
           disabled={page === totalPages}
           onClick={() => onPageChange(page + 1)}
           className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40"

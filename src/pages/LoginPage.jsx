@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 import axios from "axios";
 import BASE_URL from "../config/api";
+
 function Login() {
   const [showPopup, setShowPopup] = useState(false);
   const [email, setEmail] = useState("");
@@ -16,17 +17,17 @@ function Login() {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
+  // Check whether the entered email matches the existing accepted format.
   const validateEmail = (value) => {
     const emailRegex = /^[a-zA-Z0-9._]+@gmail\.com$/;
     return emailRegex.test(value);
   };
 
+  // Validate required fields and set the corresponding field-level errors.
   const handleSignIn = () => {
     let valid = true;
-
     setEmailError("");
     setPasswordError("");
-    
     if (!email) {
       setEmailError("Please enter email");
       valid = false;
@@ -34,27 +35,23 @@ function Login() {
       setEmailError("Error in email account");
       valid = false;
     }
-
     if (!password) {
       setPasswordError("Please enter password");
       valid = false;
     }
-
     if (!valid) return false;
-
     return true;
   };
 
   // api
+
+  // Submit the login request only after the form validation succeeds.
   const loginHandler = async (e) => {
     console.log("Hello", email)
     e.preventDefault();
-
     const isValid = handleSignIn();
     if (!isValid) return;
-
     setLoading(true);
-
     try {
       const response = await axios.post(
         `${BASE_URL}/auth/login`,
@@ -63,48 +60,45 @@ function Login() {
           password: password,
         }
       );
-
       console.log("FULL RESPONSE:", response.data);
       console.log("Client ID:", response.data.client_id);
 
+      // Read the client ID from the supported backend response structures.
       const client_id =
         response.data.client_id ||
         response.data.user?.client_id ||
         response.data.data?.client_id;
-
       if (client_id) {
         localStorage.setItem("client_id", client_id);
       }
-
       localStorage.removeItem("token");
 
       // Store token
+      // Check the supported response fields for the access token.
       const accessToken =
         response.data.access_token ||
         response.data.token ||
         response.data.jwt ||
         response.data.data?.access_token;
 
+      // Retrieve the refresh token when the backend provides one.
       const refreshToken =
         response.data.refresh_token ||
         response.data.data?.refresh_token;
-
       if (accessToken) {
         localStorage.setItem("token", accessToken);
       }
-
       if (refreshToken) {
         localStorage.setItem("refresh_token", refreshToken);
       }
 
       // Store role
+      // Read the user role from the supported backend response structures.
       const role =
         response.data.role ||
         response.data.user?.role ||
         response.data.data?.role;
-
       console.log("Role:", role);
-
       if (role) {
         const formattedRole = role.toLowerCase().trim();
         console.log("Formatted Role:", formattedRole);
@@ -114,6 +108,7 @@ function Login() {
       // Navigate after storing
       setPageLoading(true);
       setTimeout(() => {
+        // Redirect according to the normalized role after a short loading delay.
         const formattedRole = role?.toLowerCase()?.trim();
         if (formattedRole === "client") {
           navigate("/client-dashboard");
@@ -125,10 +120,10 @@ function Login() {
       console.log("FULL ERROR:", error);
       console.log("ERROR RESPONSE:", error?.response);
       console.log("ERROR DATA:", error?.response?.data);
-
       let message = "Login failed";
 
       // Backend response handling
+      // Extract a useful error message from the backend response when available.
       if (error.response && error.response.data) {
         if (typeof error.response.data === "string") {
           message = error.response.data;
@@ -138,7 +133,6 @@ function Login() {
           message = error.response.data.message;
         }
       }
-
       setErrorMessage(message);
       setInvalidPopup(true);
     } finally {
@@ -149,7 +143,6 @@ function Login() {
   return (
     <>
       <div className="relative min-h-screen bg-white flex items-center justify-center px-4">
-
         {/* WATERMARK BACKGROUND */}
         <div
           className="
@@ -195,7 +188,6 @@ function Login() {
 
         {/* MAIN CONTENT */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full">
-
           {/* LOGO */}
           <img
             src="./logo.webp"
@@ -243,7 +235,6 @@ function Login() {
                 className="w-full py-2 outline-none text-sm"
               />
             </div>
-
             {emailError && (
               <p className="text-red-500 text-xs text-left">
                 {emailError}
@@ -267,6 +258,8 @@ function Login() {
                 }}
                 className="w-full py-2 outline-none text-sm appearance-none"
               />
+
+              {/* Toggle password visibility without changing the entered value. */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -275,13 +268,13 @@ function Login() {
                 {showPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
-
             {passwordError && (
               <p className="text-red-500 text-xs text-left">
                 {passwordError}
               </p>
             )}
 
+            {/* Open the existing password-reset access information popup. */}
             <p
               className="text-left text-sm text-green-600 cursor-pointer hover:underline mb-6"
               onClick={() => setShowPopup(true)}
@@ -289,6 +282,7 @@ function Login() {
               Forgot password?
             </p>
 
+            {/* Prevent duplicate submissions while login or navigation is in progress. */}
             <button
               type="submit"
               disabled={loading || pageLoading}
@@ -305,6 +299,7 @@ function Login() {
             </button>
           </form>
         </div>
+
         {/* Forgot Password Popup */}
         {showPopup && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
@@ -316,7 +311,6 @@ function Login() {
                 You don’t have access to reset the password.
                 Please contact the admin.
               </p>
-
               <button
                 onClick={() => setShowPopup(false)}
                 className="mt-5 px-6 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 text-sm cursor-pointer"
@@ -338,15 +332,12 @@ function Login() {
         {invalidPopup && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
             <div className="bg-white w-full max-w-xs sm:max-w-[320px] p-5 sm:p-6 rounded-lg shadow-lg text-center">
-
               <h3 className="text-lg font-semibold mb-2 text-red-600">
                 Login Failed
               </h3>
-
               <p className="text-gray-600 text-sm wrap-break-word">
                 {errorMessage}
               </p>
-
               <button
                 onClick={() => setInvalidPopup(false)}
                 className="mt-5 px-6 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 text-sm cursor-pointer"

@@ -1,4 +1,5 @@
 function AnalyticsPanel({ analytics = [] }) {
+  // Check whether valid performance analytics data is available before rendering.
   const hasAnalytics = Array.isArray(analytics) && analytics.length > 0;
 
   return (
@@ -31,6 +32,7 @@ function AnalyticsPanel({ analytics = [] }) {
                 <div
                   className="h-full bg-[#2d5a27] rounded-full"
                   style={{
+                    // Keep the progress bar width between 0% and 100%.
                     width: `${Math.min(
                       Math.max(Number(item.avg_performance) || 0, 0),
                       100
@@ -46,6 +48,7 @@ function AnalyticsPanel({ analytics = [] }) {
           ))}
         </div>
       ) : (
+        // Display a helpful empty state when no analytics records are available.
         <div className="flex-1 flex flex-col items-center justify-center text-center min-h-[220px]">
           <div className="w-12 h-12 rounded-full bg-[#f8f9fa] border border-[#dee2e6] flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-[#6c757d] text-[24px]">

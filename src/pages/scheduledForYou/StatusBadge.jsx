@@ -1,4 +1,6 @@
+// Display an interview status with a color based on its current state.
 const StatusBadge = ({ status }) => {
+  // Select the badge colors according to the interview status.
   const getColor = () => {
     switch (status?.toLowerCase()) {
       case "completed":
@@ -17,6 +19,7 @@ const StatusBadge = ({ status }) => {
       case "skipped":
         return "bg-gray-200 text-gray-600";
 
+      // Use the default colors for unrecognized or missing statuses.
       default:
         return "bg-gray-100 text-gray-700";
     }

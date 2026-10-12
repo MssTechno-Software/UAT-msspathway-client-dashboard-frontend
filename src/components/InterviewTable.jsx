@@ -3,30 +3,37 @@ import { useNavigate } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
 import axios from "axios";
 import BASE_URL from "../config/api";
+
 function InterviewTable({ interviews = [] }) {
+  // Track the loading state while fetching interview insights.
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  // Retrieve the client ID and authentication token from local storage.
   const clientId = localStorage.getItem("client_id");
   const token = localStorage.getItem("token");
+  // Initialize popup-related state for displaying request errors.
   const [ setPopup] = useState({
     show: false,
     message: "",
-    type: "", // success | error
+    type: "", 
   });
   const handleViewInsights = async (scorecardId) => {
     try {
       console.log("Scorecard ID:", scorecardId);
+      // Display the loader before starting the API request.
       setLoading(true);
+      // Fetch the selected interview's scorecard using the client ID and scorecard ID.
       const response = await axios.get(
         `${BASE_URL}/api/clients/${clientId}/scorecards/${scorecardId}`,
         {
-          headers: {
+          // Pass the authentication token to authorize the request.
+           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
       console.log("API Response:", response.data);
+      // Navigate to the performance report and pass the fetched scorecard data.
       navigate("/Interview-Performance-Report", {
         state: {
           scorecard: response.data.scorecard,
@@ -34,8 +41,9 @@ function InterviewTable({ interviews = [] }) {
         },
       });
     } catch (error) {
+      // Log the error if the scorecard request or navigation flow fails.
       console.error(error);
-
+      // Prepare an error message using the API response or a fallback message.
       setPopup({
         show: true,
         type: "error",
@@ -44,13 +52,14 @@ function InterviewTable({ interviews = [] }) {
           "Failed to load interview report.",
       });
     } finally {
+      // Stop the loader regardless of whether the request succeeds or fails.
       setLoading(false);
     }
   };
   console.log("Interviews:", interviews);
   return (
     <div className="bg-white border border-[#dee2e6] shadow-sm overflow-hidden h-full flex flex-col">
-      {/*loader*/}
+      {/* Display a loading overlay while interview insights are being fetched. */}
       {loading && (
         <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
           <div className="p-6 flex flex-col items-center gap-3">
@@ -72,7 +81,6 @@ function InterviewTable({ interviews = [] }) {
           Recently Completed Interviews
         </h2>
       </div>
-
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
@@ -91,8 +99,8 @@ function InterviewTable({ interviews = [] }) {
               </th>
             </tr>
           </thead>
-
           <tbody>
+            {/* Render interview records when data is available; otherwise show the empty state. */}
             {interviews.length > 0 ? (
               interviews.map((item, index) => (
                 <tr
@@ -120,14 +128,15 @@ function InterviewTable({ interviews = [] }) {
                       {item.score_display}
                     </span>
                   </td>
-
                   <td className="px-6 py-5 text-left">
                     <button
                       onClick={() => {
+                        // Extract the scorecard ID from the interview's insights URL.
                         const params = new URLSearchParams(
                           item.insights_url.split("?")[1]
                         );
                         const scorecardId = params.get("scorecard_id");
+                        // Fetch the selected scorecard and open its performance report.
                         handleViewInsights(scorecardId);
                       }}
                       className="inline-flex items-center gap-1 text-[#2d5a27] cursor-pointer font-bold text-sm hover:underline"

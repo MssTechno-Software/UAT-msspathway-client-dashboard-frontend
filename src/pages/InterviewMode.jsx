@@ -5,10 +5,10 @@ import { useNavigate } from "react-router-dom";
 import BASE_URL from "../config/api";
 import PreMarketingSlider from "../components/PreMarketingSlider";
 function InterviewModes() {
-   const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const navigate = useNavigate();
- const fetchDashboard = useCallback(async (signal) => {
+  const fetchDashboard = useCallback(async (signal) => {
     try {
         setLoading(true);
         const clientId = localStorage.getItem("client_id");

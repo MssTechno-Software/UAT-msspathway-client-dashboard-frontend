@@ -1,5 +1,6 @@
+// Display the next scheduled interview or an empty state when no session exists.
 const NextSessionCard = ({ session, onStart }) => {
-
+    // Show a message when there is no upcoming interview.
     if (!session)
         return (
 
@@ -35,6 +36,7 @@ const NextSessionCard = ({ session, onStart }) => {
                     {session.company_name}
                 </p>
 
+                {/* Display the scheduled interview date and time. */}
                 <p className="mt-3 text-sm">
                     📅{" "}
                     {new Date(
@@ -51,6 +53,7 @@ const NextSessionCard = ({ session, onStart }) => {
 
                 <button
                     className="mt-6 w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 cursor-pointer"
+                    // Pass the selected session to the parent component to start the interview.
                     onClick={() => onStart(session)}
                 >
                     {session.interview_source === "realtime"

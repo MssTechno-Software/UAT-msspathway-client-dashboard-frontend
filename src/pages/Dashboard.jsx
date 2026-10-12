@@ -11,11 +11,14 @@ function Dashboard() {
   const clientId = localStorage.getItem("client_id");
   const token = localStorage.getItem("token");
 
+ // Fetch dashboard data and memoize the function based on its dependencies.
  const fetchDashboard = useCallback(async (signal) => {
     try {
         setLoading(true);
         console.log("Client ID:", clientId);
         console.log("Token:", token);
+
+        // Request dashboard data with the latest five completed interviews.
         const response = await axios.get(
             `${BASE_URL}/api/clients/${clientId}/dashboard`,
             {
@@ -28,19 +31,23 @@ function Dashboard() {
                 signal,
             }
         );
+        // Skip the state update if the request has been cancelled.
         if (signal.aborted) return;
         console.log("Dashboard Response:", response.data);
         setData(response.data);
-    } catch (error) {
+      } catch (error) {
+        // Log errors only when the request has not been aborted.
         if (!signal.aborted) {
             console.error("Dashboard Error:", error.response?.data || error.message);
         }
     } finally {
+        // Stop loading only if the request is still active.
         if (!signal.aborted) {
             setLoading(false);
         }
     }
 }, [clientId, token]);
+// Manage the dashboard request lifecycle and cancel it during cleanup.
 useEffect(() => {
     const controller = new AbortController();
     Promise.resolve().then(() => {

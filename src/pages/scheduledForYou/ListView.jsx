@@ -1,6 +1,7 @@
 import StatusBadge from "./StatusBadge";
 import Pagination from "./Pagination";
 
+// Display scheduled interviews with their status, details, and available actions.
 const ListView = ({
   interviews = [],
   pagination = {},
@@ -8,6 +9,7 @@ const ListView = ({
   onPageSizeChange,
   onStartInterview,
 }) => {
+  // Apply different row colors based on the interview source.
   const getInterviewStyle = (item) => {
     if (item.interview_source === "realtime") {
       return {
@@ -60,6 +62,7 @@ const ListView = ({
 
           <tbody>
 
+            {/* Show an empty state when no interview records are available. */}
             {!Array.isArray(interviews) || interviews.length === 0 ? (
               <tr>
                 <td
@@ -71,8 +74,10 @@ const ListView = ({
               </tr>
 
             ) : (
+              // Render each interview as a separate table row.
               Array.isArray(interviews) &&
               interviews.map((item, index) => {
+                // Select the row and title styles for the current interview.
                 const style = getInterviewStyle(item);
 
                 return (
@@ -105,6 +110,7 @@ const ListView = ({
                     </td>
 
                     <td className="px-6 py-6">
+                      {/* Prevent starting an interview that is already completed. */}
                       <button
                         onClick={() => onStartInterview(item)}
                         disabled={item.status.toLowerCase() === "completed"}
@@ -132,6 +138,7 @@ const ListView = ({
 
       <div className="p-5 border-t border-gray-200">
 
+        {/* Pass pagination values and handlers to the reusable pagination component. */}
         <Pagination
           page={pagination?.page || 1}
           totalPages={pagination?.total_pages || 1}

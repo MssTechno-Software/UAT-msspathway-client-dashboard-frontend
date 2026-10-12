@@ -29,16 +29,14 @@ const ScheduledInterviews = () => {
         message: "",
         type: "", // success | error
     });
-
+    // Normalize the API response so both array and grouped interview data can be displayed.
     const interviews = Array.isArray(data.scheduled_interviews)
         ? data.scheduled_interviews
         : Object.values(data.scheduled_interviews || {}).flat();
-
+    // Filter interviews across their title, company, type, source, mode, and status.
     const filteredInterviews = interviews.filter((item) => {
         const search = searchTerm.trim().toLowerCase();
-
         if (!search) return true;
-
         return (
             (item.title || "").toLowerCase().includes(search) ||
             (item.company_name || "").toLowerCase().includes(search) ||
@@ -48,17 +46,13 @@ const ScheduledInterviews = () => {
             (item.status || "").toLowerCase().includes(search)
         );
     });
-
+    // Reload scheduled interviews when the selected view or pagination changes.
     useEffect(() => {
         let cancelled = false;
-
         const loadScheduledInterviews = async () => {
             await Promise.resolve();
-
             if (cancelled || !clientId) return;
-
             setLoading(true);
-
             try {
                 const res = await axios.get(
                     `${BASE_URL}/clients/${clientId}/scheduled-interviews`,
@@ -70,15 +64,12 @@ const ScheduledInterviews = () => {
                         },
                     }
                 );
-
                 if (!cancelled) {
                     setData(res.data);
                 }
             } catch (err) {
                 if (cancelled) return;
-
                 console.error(err);
-
                 setPopup({
                     show: true,
                     type: "error",
@@ -94,22 +85,21 @@ const ScheduledInterviews = () => {
                 }
             }
         };
-
         if (clientId) {
             loadScheduledInterviews();
         }
-
         return () => {
             cancelled = true;
         };
     }, [clientId, view, page, pageSize]);
-
+    // Open realtime meetings directly or load pre-start details for AI interviews.
     const handleStartInterview = async (interview) => {
         try {
-
             // Realtime interview
-            if (interview.interview_source === "realtime") {
-
+            if (
+                interview.interview_source === "realtime" ||
+                interview.interview_type === "in_person"
+            ) {
                 if (interview.meeting_link) {
                     window.open(interview.meeting_link, "_blank", "noopener,noreferrer");
                 } else {
@@ -119,30 +109,24 @@ const ScheduledInterviews = () => {
                         message: "Meeting link is not available.",
                     });
                 }
-
                 return;
             }
-
             setLoading(true);
-
+            // Fetch the setup data required before starting this scheduled interview.
             const res = await axios.get(
                 `${BASE_URL}/api/clients/${clientId}/interviews/${interview.interview_id}/pre-start`
             );
-
             console.log(res.data);
-
             navigate("/scheduled-interview-mode", {
                 state: {
                     interview,
                     preStartData: res.data,
                 },
             });
-
         } catch (err) {
             console.error(err);
-
+            // Prefer a useful backend error message before using the fallback text.
             let errorMessage = "Failed to load scheduled interviews.";
-
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.response?.data?.error) {
@@ -155,7 +139,6 @@ const ScheduledInterviews = () => {
             } else if (typeof err.response?.data?.detail === "string") {
                 errorMessage = err.response.data.detail;
             }
-
             setPopup({
                 show: true,
                 type: "error",
@@ -172,7 +155,6 @@ const ScheduledInterviews = () => {
                 <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
                     <div className="p-6 flex flex-col items-center gap-3">
                         <FiLoader className="animate-spin text-4xl text-green-800" />
-
                         <p className="text-gray-800 font-medium">
                             Please wait...
                         </p>
@@ -181,7 +163,6 @@ const ScheduledInterviews = () => {
             )}
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-
                 <h1 className="text-[48px] font-bold text-[#230804]">
                     Scheduled Interviews
                 </h1>
@@ -208,10 +189,8 @@ const ScheduledInterviews = () => {
                             </button>
                         )}
                     </div>
-
                     {/* View Toggle */}
                     <div className="flex rounded-lg overflow-hidden border border-gray-300 shadow">
-
                         <button
                             onClick={() => setView("month")}
                             className={`flex items-center gap-2 px-5 py-2 transition cursor-pointer ${view === "month"
@@ -222,7 +201,6 @@ const ScheduledInterviews = () => {
                             <FiCalendar size={18} />
                             <span>Calendar</span>
                         </button>
-
                         <button
                             onClick={() => setView("list")}
                             className={`flex items-center gap-2 px-5 py-2 transition cursor-pointer ${view === "list"
@@ -233,15 +211,12 @@ const ScheduledInterviews = () => {
                             <FiList size={18} />
                             <span>List</span>
                         </button>
-
                     </div>
                 </div>
             </div>
-
             {/* Views */}
-
+            {/* Render either the list view or calendar view based on the selected mode. */}
             {view === "list" ? (
-
                 <ListView
                     interviews={filteredInterviews}
                     pagination={data.pagination}
@@ -249,22 +224,18 @@ const ScheduledInterviews = () => {
                     onPageSizeChange={setPageSize}
                     onStartInterview={handleStartInterview}
                 />
-
             ) : (
-
                 <CalendarView
                     scheduledInterviews={filteredInterviews}
                     nextSession={data.next_session}
                     todayTimeline={data.today_timeline}
                     onStartInterview={handleStartInterview}
                 />
-
             )}
-
+            {/* Display request errors in the existing popup. */}
             {popup.show && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
                     <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
-
                         <p
                             className={`text-lg font-semibold mb-4 ${popup.type === "success"
                                 ? "text-green-700"
@@ -273,7 +244,6 @@ const ScheduledInterviews = () => {
                         >
                             {popup.message}
                         </p>
-
                         <button
                             onClick={() =>
                                 setPopup({
@@ -286,12 +256,10 @@ const ScheduledInterviews = () => {
                         >
                             OK
                         </button>
-
                     </div>
                 </div>
             )}
         </div>
     );
 };
-
 export default ScheduledInterviews;

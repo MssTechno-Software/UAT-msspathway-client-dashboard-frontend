@@ -1,3 +1,4 @@
+// Reusable dashboard card for displaying interview and performance statistics.
 function StatCard({ title, value, message, type = "interviews" }) {
   return (
     <div
@@ -13,6 +14,7 @@ function StatCard({ title, value, message, type = "interviews" }) {
             ${type === "performance" ? "bg-[#eff4ff]" : "bg-green-50"}
           `}
         >
+          {/* Display the icon based on the card type. */}
           {type === "performance" ? (
             <span
               className="material-symbols-outlined text-[#3b6934] text-[36px] leading-none"
@@ -27,8 +29,8 @@ function StatCard({ title, value, message, type = "interviews" }) {
             </span>
           )}
         </div>
-
         <div className="flex flex-col">
+          {/* Display the statistic title and its value. */}
           <span className="text-[11px] uppercase tracking-[0.15em] font-bold text-[#6c757d]">
             {title}
           </span>
@@ -43,6 +45,7 @@ function StatCard({ title, value, message, type = "interviews" }) {
             {value}
           </h2>
 
+          {/* Display the supporting message below the statistic. */}
           <p
             className="
               mt-2

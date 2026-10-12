@@ -38,12 +38,16 @@ function TheoryAIInterview() {
     const difficulty_level = state?.difficulty_level;
     const nextQuestionIndex = state?.nextQuestionIndex;
     const existingQuestions = state?.questions;
+    // Ref that always points to the latest handleSubmitAnswer.
+    // Needed because the timer's setInterval callback would otherwise hold a stale (old) copy of the function.
     const handleSubmitAnswerRef = useRef(null);
+
     const [isRecording, setIsRecording] = useState(false);
     const [waveScale, setWaveScale] = useState(1);
     const [timeLeft, setTimeLeft] = useState(119);
     const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
     const seconds = String(timeLeft % 60).padStart(2, "0");
+    // Guards against double submission (button click + auto-submit on timeout)
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [questions, setQuestions] = useState(() =>
         Array.isArray(existingQuestions) ? existingQuestions : []
@@ -71,10 +75,13 @@ function TheoryAIInterview() {
         if (!isRecording) return;
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
+                // Time is up: stop the mic, stop recording and auto-submit the answer
                 if (prev <= 1) {
                     clearInterval(timer);
                     SpeechRecognition.stopListening();
                     setIsRecording(false);
+                    // Small delay so the final transcript is captured before submitting.
+                    // Uses the ref so we call the latest handleSubmitAnswer, not a stale one.
                     setTimeout(() => {
                         handleSubmitAnswerRef.current?.();
                     }, 500);
@@ -99,7 +106,7 @@ function TheoryAIInterview() {
         setTimeLeft(119);
         setWaveScale(1);
         SpeechRecognition.startListening({
-            continuous: true,
+            continuous: true, // keep listening until we explicitly stop
             language: "en-US",
         });
         setIsRecording(true);
@@ -116,11 +123,13 @@ function TheoryAIInterview() {
         resetTranscript();
         setTimeLeft(119);
         const updatedQuestions = [...questions];
+        // Only one question can be "current" at a time, so revert the old one to "pending"
         updatedQuestions.forEach((q) => {
             if (q.attempted_status === "current") {
                 q.attempted_status = "pending";
             }
         });
+        // Completed / skipped questions keep their status; others become the new "current"
         if (
             updatedQuestions[index].attempted_status !== "completed" &&
             updatedQuestions[index].attempted_status !== "skipped"
@@ -143,6 +152,7 @@ function TheoryAIInterview() {
                 throw new Error(data.detail || "Failed");
             }
             setQuestions(data);
+            // Resume from the question the backend marked "current" (e.g. user left midway); default to first
             const currentIndex = data.findIndex(
                 q => q.attempted_status === "current"
             );
@@ -161,6 +171,7 @@ function TheoryAIInterview() {
         }
     }, [client_id, technology_id, subtopic_id, difficulty_level]);
 
+    // On mount: fetch questions only if they weren't passed in from the previous page
     useEffect(() => {
     if (existingQuestions?.length) return;
 
@@ -189,6 +200,8 @@ function TheoryAIInterview() {
             }
             const updatedQuestions = [...questions];
             updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
+            // Move forward only if this is not the last question
+            // (Note: on the last question nothing happens after a successful skip - no state update / popup)
             if (currentQuestionIndex < updatedQuestions.length - 1) {
                 updatedQuestions[currentQuestionIndex + 1].attempted_status =
                     "current";
@@ -217,8 +230,12 @@ function TheoryAIInterview() {
 
     /* submit answer */
 
+   // Sends the spoken answer (as text) to the backend for AI evaluation, then navigates to the feedback page.
+   // Wrapped in useCallback and mirrored into handleSubmitAnswerRef so the auto-submit timer always calls the latest version.
    const handleSubmitAnswer = useCallback(async () => {
+        // Prevent duplicate submissions while one is already in progress
         if (isSubmitting) return;
+        // Validation: an empty transcript means the user never spoke
         if (!transcript.trim()) {
             setPopup({
                 show: true,
@@ -256,6 +273,8 @@ function TheoryAIInterview() {
                 message: data.message || data.detail || "Answer submitted successfully",
                 type: "success",
             });
+            // Go to the feedback page, passing the AI feedback plus everything needed to return to this page
+            // (question_stepper from the backend carries the updated question statuses)
             navigate("/theory-feedback", {
                 state: {
                     feedbackData: data,
@@ -297,6 +316,7 @@ function TheoryAIInterview() {
         subtopic_id,
         difficulty_level,
     ]);
+    // Keep the ref in sync with the latest handleSubmitAnswer after every change
     useEffect(() => {
         handleSubmitAnswerRef.current = handleSubmitAnswer;
     }, [handleSubmitAnswer]);
@@ -350,6 +370,7 @@ function TheoryAIInterview() {
                     <div className="bg-white border border-[#e7dbd6] rounded-xl px-5 py-4 shadow-sm">
                         <div className="flex items-center">
                             {/* Previous */}
+                            {/* Note: Previous / Next arrow buttons have no onClick handlers (decorative only) */}
                             <button
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-[#6b5f5b] hover:bg-gray-100 transition"
                             >
@@ -434,6 +455,8 @@ function TheoryAIInterview() {
                                 {/* Waveform */}
                                 <Waveform isRecording={isRecording} waveScale={waveScale} />
                                 {/* Timer */}
+                                {/* Shows MM:SS countdown and a thin progress bar.
+                                    Note: the bar divides by 105 while the timer starts at 119, so width can exceed 100% at the start */}
                                 <div className="mt-12 flex flex-col items-center">
                                     <div className="flex flex-wrap justify-center items-center gap-2 mb-1 text-center">
                                         <Timer
@@ -493,6 +516,7 @@ function TheoryAIInterview() {
                                         </>
                                     )}
                                 </button>
+                                {/* Skip is enabled only when the question's status is "current" */}
                                 <button
                                     onClick={handleSkipQuestion}
                                     disabled={currentQuestion?.attempted_status !== "current"}

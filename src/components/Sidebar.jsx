@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import BASE_URL from "../config/api";
 
+// Define sidebar menu items and the routes associated with each section.
 const menuItems = [
   {
     icon: "person",
@@ -57,6 +58,7 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check whether the current URL belongs to a menu item's route list.
   const isMenuActive = (item) => {
     const currentPath = location.pathname;
 
@@ -69,8 +71,10 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
 
   const handleLogout = async () => {
     try {
+      // Retrieve the authentication token for the logout request.
       const token = localStorage.getItem("token");
 
+      // Notify the backend that the current user is logging out.
       const response = await axios.post(
         `${BASE_URL}/auth/logout`,
         null,
@@ -84,16 +88,19 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
 
       console.log("Logout Success:", response.data);
     } catch (error) {
+      // Log the API error if the logout request fails.
       console.error(
         "Logout Error:",
         error.response?.data || error.message
       );
     } finally {
+      // Clear the stored authentication and user details after logout.
       localStorage.removeItem("token");
       localStorage.removeItem("user_id");
       localStorage.removeItem("employee_id");
       localStorage.removeItem("role");
 
+      // Redirect the user to the login page.
       navigate("/login");
     }
   };
@@ -108,6 +115,7 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
         ${openSidebar ? "w-64" : "w-20"}
       `}
     >
+      {/* Toggle between the expanded and collapsed sidebar layouts. */}
       <button
         onClick={() => setOpenSidebar(!openSidebar)}
         className="
@@ -125,6 +133,7 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
         )}
       </button>
 
+      {/* Display the company logo and sidebar heading. */}
       <div className="mb-6 px-2">
         <div className="flex items-center gap-3">
           <img
@@ -147,6 +156,7 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
         </div>
       </div>
 
+      {/* Render navigation links and highlight the active menu section. */}
       <nav className="flex-1 flex flex-col gap-1">
         {menuItems.map((item) => (
           <NavLink
@@ -177,6 +187,7 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
         ))}
       </nav>
 
+      {/* Display logout and application version information. */}
       <div className="pt-4 border-t border-white/10">
         <button
           onClick={handleLogout}
