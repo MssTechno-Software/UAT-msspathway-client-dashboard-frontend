@@ -792,9 +792,7 @@ function PreMarketingSlider() {
         {/* Main content */}
         <div
           key={active}
-          className={`relative z-10 grid gap-8 items-center px-8 md:px-12 pt-16 pb-24 min-h-[500px] transition-all duration-500 ${expanded ? "grid-cols-1" : "md:grid-cols-[1fr_1.1fr]"}`}
-        >
-
+          className={`relative z-10 grid gap-8 items-center px-4 sm:px-6 md:px-12 pt-16 pb-24 min-h-[500px] transition-all duration-500 ${expanded ? "grid-cols-1" : "grid-cols-1 md:grid-cols-[1fr_1.1fr]"}`}        >
           {/* LEFT SIDE */}
           {!expanded && (
             <div>

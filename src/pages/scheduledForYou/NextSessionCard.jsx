@@ -50,16 +50,18 @@ const NextSessionCard = ({ session, onStart }) => {
                         session.scheduled_at
                     ).toLocaleTimeString()}
                 </p>
-
+                
                 <button
                     className="mt-6 w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800 cursor-pointer"
-                    // Pass the selected session to the parent component to start the interview.
                     onClick={() => onStart(session)}
                 >
-                    {session.interview_source === "realtime"
+                    {session.interview_source === "realtime" ||
+                        session.interview_type === "in_person" ||
+                        session.title?.toLowerCase().includes("in person")
                         ? "JOIN MEETING"
                         : "START"}
                 </button>
+                
 
             </div>
 

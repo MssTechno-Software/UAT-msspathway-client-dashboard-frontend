@@ -98,7 +98,8 @@ const ScheduledInterviews = () => {
             // Realtime interview
             if (
                 interview.interview_source === "realtime" ||
-                interview.interview_type === "in_person"
+                interview.interview_type === "in_person" ||
+                interview.title?.toLowerCase().includes("in person")
             ) {
                 if (interview.meeting_link) {
                     window.open(interview.meeting_link, "_blank", "noopener,noreferrer");
