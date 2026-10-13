@@ -15,9 +15,6 @@ function Dashboard() {
  const fetchDashboard = useCallback(async (signal) => {
     try {
         setLoading(true);
-        console.log("Client ID:", clientId);
-        console.log("Token:", token);
-
         // Request dashboard data with the latest five completed interviews.
         const response = await axios.get(
             `${BASE_URL}/api/clients/${clientId}/dashboard`,
@@ -33,7 +30,6 @@ function Dashboard() {
         );
         // Skip the state update if the request has been cancelled.
         if (signal.aborted) return;
-        console.log("Dashboard Response:", response.data);
         setData(response.data);
       } catch (error) {
         // Log errors only when the request has not been aborted.

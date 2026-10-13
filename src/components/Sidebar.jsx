@@ -96,6 +96,8 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
     } finally {
       // Clear the stored authentication and user details after logout.
       localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("client_id");
       localStorage.removeItem("user_id");
       localStorage.removeItem("employee_id");
       localStorage.removeItem("role");
@@ -170,10 +172,9 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
                 ${openSidebar ? "justify-start gap-3" : "justify-center"}
                 px-4 py-3 rounded-xl
                 text-[12px] tracking-wider transition-all
-                ${
-                  active
-                    ? "bg-green-800 text-white font-bold"
-                    : "text-white/80 hover:bg-white/10"
+                ${active
+                  ? "bg-green-800 text-white font-bold"
+                  : "text-white/80 hover:bg-white/10"
                 }
               `;
             }}

@@ -142,12 +142,11 @@ function ScheduledAIInterview() {
         setIsRecording(true);
     };
 
-    const stopRecording = useCallback(() => {
-        SpeechRecognition.stopListening();
-        setIsRecording(false);
-        setWaveScale(1);
-    }, []);
-
+const stopRecording = useCallback(() => {
+    SpeechRecognition.abortListening();
+    setIsRecording(false);
+    setWaveScale(1);
+}, []);
     // clicking a number in the stepper -> jump to that question
     const handleStepClick = (index) => {
         stopRecording();
@@ -251,16 +250,26 @@ function ScheduledAIInterview() {
         handleSubmitAnswerRef.current = handleSubmitAnswer;
     }, [handleSubmitAnswer]);
 
-    // skip = save empty answer + mark skipped + move next
-    const handleSkipQuestion = () => {
-        setAnswers(prev => [
-            ...prev,
-            {
-                question_number: currentQuestionIndex + 1,
-                answer_text: ""
-            }
-        ]);
+    // skip = save empty answer + mark skipped + move 
+   const handleSkipQuestion = () => {
+    if (currentQuestion?.attempted_status !== "current") return;
 
+    // Stop recording before skipping the question.
+    SpeechRecognition.abortListening();
+    setIsRecording(false);
+    setWaveScale(1);
+    resetTranscript();
+    setTimeLeft(119);
+
+    setAnswers(prev => [
+        ...prev.filter(
+            ans => ans.question_number !== currentQuestionIndex + 1
+        ),
+        {
+            question_number: currentQuestionIndex + 1,
+            answer_text: ""
+        }
+    ]);
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
 

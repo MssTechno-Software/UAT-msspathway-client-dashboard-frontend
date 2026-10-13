@@ -1,4 +1,4 @@
-import { useState} from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 import axios from "axios";
@@ -47,7 +47,6 @@ function Login() {
 
   // Submit the login request only after the form validation succeeds.
   const loginHandler = async (e) => {
-    console.log("Hello", email)
     e.preventDefault();
     const isValid = handleSignIn();
     if (!isValid) return;
@@ -60,20 +59,13 @@ function Login() {
           password: password,
         }
       );
-      console.log("FULL RESPONSE:", response.data);
-      console.log("Client ID:", response.data.client_id);
 
       // Read the client ID from the supported backend response structures.
       const client_id =
         response.data.client_id ||
         response.data.user?.client_id ||
         response.data.data?.client_id;
-      if (client_id) {
-        localStorage.setItem("client_id", client_id);
-      }
-      localStorage.removeItem("token");
 
-      // Store token
       // Check the supported response fields for the access token.
       const accessToken =
         response.data.access_token ||
@@ -85,31 +77,63 @@ function Login() {
       const refreshToken =
         response.data.refresh_token ||
         response.data.data?.refresh_token;
-      if (accessToken) {
-        localStorage.setItem("token", accessToken);
-      }
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken);
-      }
 
-      // Store role
       // Read the user role from the supported backend response structures.
       const role =
         response.data.role ||
         response.data.user?.role ||
         response.data.data?.role;
-      console.log("Role:", role);
-      if (role) {
-        const formattedRole = role.toLowerCase().trim();
-        console.log("Formatted Role:", formattedRole);
-        localStorage.setItem("role", formattedRole);
+
+      // Normalize the role received from the backend.
+      const formattedRole =
+        typeof role === "string" ? role.toLowerCase().trim() : "";
+
+
+      // Allow only client accounts to proceed with login.
+      if (!accessToken || formattedRole !== "client") {
+        // Clear authentication data when the response is invalid or the role is not allowed.
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("client_id");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("employee_id");
+
+        setErrorMessage(
+          !accessToken
+            ? "Login response is missing the access token."
+            : formattedRole !== "client"
+              ? "Only client accounts can log in here."
+              : "Login response is missing required authentication data."
+        );
+
+        setInvalidPopup(true);
+        return;
+      }
+      // Clear previous authentication data after validating the response.
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("client_id");
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("employee_id");
+
+      // Store the new authentication data.
+      localStorage.setItem("token", accessToken);
+      localStorage.setItem("role", formattedRole);
+
+      if (refreshToken) {
+        localStorage.setItem("refresh_token", refreshToken);
+      }
+
+      if (client_id != null) {
+        localStorage.setItem("client_id", String(client_id));
       }
 
       // Navigate after storing
       setPageLoading(true);
       setTimeout(() => {
         // Redirect according to the normalized role after a short loading delay.
-        const formattedRole = role?.toLowerCase()?.trim();
         if (formattedRole === "client") {
           navigate("/client-dashboard");
         } else {
@@ -117,9 +141,6 @@ function Login() {
         }
       }, 500);
     } catch (error) {
-      console.log("FULL ERROR:", error);
-      console.log("ERROR RESPONSE:", error?.response);
-      console.log("ERROR DATA:", error?.response?.data);
       let message = "Login failed";
 
       // Backend response handling
@@ -226,7 +247,7 @@ function Login() {
               <FiMail className="text-gray-400 mr-2" />
               <input
                 type="email"
-                placeholder="you@msstechno.com"
+                placeholder="you@gmail.com"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -327,7 +348,6 @@ function Login() {
             </div>
           </div>
         )}
-
         {/* Invalid Credentials Popup */}
         {invalidPopup && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">

@@ -11,11 +11,27 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   const navigate = useNavigate();
 
+  // Clear only authentication-related session data.
+  const clearAuthSession = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("client_id");
+  };
+
   useEffect(() => {
     // Skip token validation when no token is available.
     if (!token) return;
 
     let cancelled = false;
+    let timeoutId;
+
+    const expireSession = () => {
+      if (cancelled) return;
+
+      clearAuthSession();
+      setSessionExpired(true);
+    };
 
     Promise.resolve().then(() => {
       // Prevent validation from continuing if the effect has been cleaned up.
@@ -23,38 +39,78 @@ function ProtectedRoute({ children, allowedRoles }) {
 
       try {
         // Decode the JWT payload and retrieve its expiration timestamp.
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const expiry = payload.exp * 1000;
-        const currentTime = Date.now();
+        const tokenParts = token.split(".");
 
-        // Clear stored session data when the token has expired.
-        if (currentTime > expiry) {
-          localStorage.clear();
-          setSessionExpired(true);
+        if (tokenParts.length !== 3) {
+          throw new Error("Invalid token format");
         }
+
+        // Handle Base64URL encoding used by JWT payloads.
+        const base64Payload = tokenParts[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        const payload = JSON.parse(atob(base64Payload));
+
+        // Validate the expiration timestamp before using it.
+        if (
+          typeof payload.exp !== "number" ||
+          !Number.isFinite(payload.exp)
+        ) {
+          throw new Error("Token expiry is missing");
+        }
+
+        const expiry = payload.exp * 1000;
+
+        // Check token expiry and schedule the next check.
+        const checkExpiry = () => {
+          if (cancelled) return;
+
+          const remainingTime = expiry - Date.now();
+
+          if (remainingTime <= 0) {
+            expireSession();
+            return;
+          }
+
+          // Handle long-lived tokens and browser timer limits.
+          timeoutId = setTimeout(
+            checkExpiry,
+            Math.min(remainingTime, 2147483647)
+          );
+        };
+
+        checkExpiry();
       } catch {
-        // Handle invalid tokens by clearing stored session data.
+        // Handle invalid tokens by clearing authentication data.
         console.log("Invalid token");
-        localStorage.clear();
-        setSessionExpired(true);
+        expireSession();
       }
     });
-    // Mark the effect as cancelled when the component unmounts or the token changes.
+
+    // Clean up the timer when the component unmounts or the token changes.
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [token]);
+
   useEffect(() => {
     // Handle session expiration events triggered elsewhere in the application.
     const handleSessionExpired = () => {
-      localStorage.clear();
+      clearAuthSession();
       setSessionExpired(true);
     };
+
     // Listen for session expiration events across the application.
     window.addEventListener("session-expired", handleSessionExpired);
+
     // Remove the event listener when the component unmounts.
     return () => {
-      window.removeEventListener("session-expired", handleSessionExpired);
+      window.removeEventListener(
+        "session-expired",
+        handleSessionExpired
+      );
     };
   }, []);
 
@@ -92,7 +148,7 @@ function ProtectedRoute({ children, allowedRoles }) {
               // Close the popup and navigate to the login page.
               onClick={() => {
                 setSessionExpired(false);
-                navigate("/login");
+                navigate("/login", { replace: true });
               }}
               className="mt-5 px-6 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 text-sm cursor-pointer"
             >
