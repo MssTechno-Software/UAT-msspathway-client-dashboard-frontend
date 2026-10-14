@@ -10,7 +10,6 @@ function ScheduledInterviewFeedback() {
     const state = location.state;
    const [loading] = useState(false);
     const scorecard = location.state?.scorecard;
-    console.log("Scorecard:", scorecard);
     const interviewType = state?.preStartData?.interview_type || "";
     const pageTitle = interviewType
         .replace(/_/g, " ")

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
 import { ArrowLeft } from "lucide-react";
+import { getClientId } from "../services/authSession";
 
 function TheoryStartModule() {
     const navigate = useNavigate();
@@ -10,11 +11,7 @@ function TheoryStartModule() {
     const subTopic = state?.subTopic || "";
     const technology_id = state?.technology_id;
     const subtopic_id = state?.subtopic_id;
-    const client_id = localStorage.getItem("client_id");
-
-    console.log(topic);
-    console.log(subTopic);
-
+    const client_id = getClientId();
     const [loading, setLoading] = useState(false);
     const [difficulty, setDifficulty] = useState("Easy");
 

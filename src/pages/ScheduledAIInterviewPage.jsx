@@ -5,6 +5,9 @@ import { Mic, SkipForward, CheckCircle, Timer, Square } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import BASE_URL from "../config/api";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import { getClientId } from "../services/authSession";
+import { getApiErrorMessage } from "../utils/apiErrorHandler";
+import ApiErrorModal from "../components/ApiErrorModal";
 
 // Animated bars shown only while recording
 function Waveform({ isRecording, waveScale }) {
@@ -36,13 +39,16 @@ function ScheduledAIInterview() {
 
     const preStartData = state?.preStartData;
     const interviewType = preStartData?.interview_type || "";
+
     // "technical_round" -> "Technical Round" (used in breadcrumb)
     const pageTitle = interviewType.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+
     //const pageTitle = state?.preStartData?.page_title?.trim();
     const navigate = useNavigate();
 
-    // router state first, localStorage as fallback
-    const clientId = state?.client_id || localStorage.getItem("client_id");
+    // Router state first, then the current session client ID.
+    const clientId = state?.client_id || getClientId();
+
     const interview_id =
         state?.interview_id || state?.interview?.interview_id;
 
@@ -50,6 +56,7 @@ function ScheduledAIInterview() {
     const [answers, setAnswers] = useState([]);
     const [isRecording, setIsRecording] = useState(false);
     const [waveScale, setWaveScale] = useState(1);
+
     // seconds left for each question (119 = about 2 min)
     const [timeLeft, setTimeLeft] = useState(119);
     const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
@@ -58,6 +65,7 @@ function ScheduledAIInterview() {
     // API questions -> UI format. attempted_status: current | pending | completed | skipped
     const [questions, setQuestions] = useState(() => {
         const apiQuestions = state?.questions || [];
+
         return apiQuestions.map((q, index) => ({
             ...q,
             question_id: q.id,
@@ -65,8 +73,10 @@ function ScheduledAIInterview() {
             attempted_status: index === 0 ? "current" : "pending",
         }));
     });
+
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const currentQuestion = questions[currentQuestionIndex];
+
     // ref always holds latest handleSubmitAnswer (used by timer auto-submit)
     const handleSubmitAnswerRef = useRef(null);
     const [loading, setLoading] = useState(false);
@@ -77,14 +87,14 @@ function ScheduledAIInterview() {
         type: "", // success | error
     });
 
-    console.log("state", state);
-    console.log("clientId", clientId);
-    console.log("questions", state?.questions);
+    // Shared API error handling
+    const [apiError, setApiError] = useState(null);
+    const [retryAction, setRetryAction] = useState(null);
+
     // transcript = live speech-to-text result
     const {
         transcript,
         resetTranscript,
-
     } = useSpeechRecognition();
 
     /*timer*/
@@ -142,11 +152,12 @@ function ScheduledAIInterview() {
         setIsRecording(true);
     };
 
-const stopRecording = useCallback(() => {
-    SpeechRecognition.abortListening();
-    setIsRecording(false);
-    setWaveScale(1);
-}, []);
+    const stopRecording = useCallback(() => {
+        SpeechRecognition.abortListening();
+        setIsRecording(false);
+        setWaveScale(1);
+    }, []);
+
     // clicking a number in the stepper -> jump to that question
     const handleStepClick = (index) => {
         stopRecording();
@@ -184,6 +195,7 @@ const stopRecording = useCallback(() => {
                 message: "Please speak before submitting.",
                 type: "error",
             });
+
             return;
         }
 
@@ -250,26 +262,27 @@ const stopRecording = useCallback(() => {
         handleSubmitAnswerRef.current = handleSubmitAnswer;
     }, [handleSubmitAnswer]);
 
-    // skip = save empty answer + mark skipped + move 
-   const handleSkipQuestion = () => {
-    if (currentQuestion?.attempted_status !== "current") return;
+    // skip = save empty answer + mark skipped + move
+    const handleSkipQuestion = () => {
+        if (currentQuestion?.attempted_status !== "current") return;
 
-    // Stop recording before skipping the question.
-    SpeechRecognition.abortListening();
-    setIsRecording(false);
-    setWaveScale(1);
-    resetTranscript();
-    setTimeLeft(119);
+        // Stop recording before skipping the question.
+        SpeechRecognition.abortListening();
+        setIsRecording(false);
+        setWaveScale(1);
+        resetTranscript();
+        setTimeLeft(119);
 
-    setAnswers(prev => [
-        ...prev.filter(
-            ans => ans.question_number !== currentQuestionIndex + 1
-        ),
-        {
-            question_number: currentQuestionIndex + 1,
-            answer_text: ""
-        }
-    ]);
+        setAnswers(prev => [
+            ...prev.filter(
+                ans => ans.question_number !== currentQuestionIndex + 1
+            ),
+            {
+                question_number: currentQuestionIndex + 1,
+                answer_text: ""
+            }
+        ]);
+
         const updatedQuestions = [...questions];
         updatedQuestions[currentQuestionIndex].attempted_status = "skipped";
 
@@ -290,6 +303,9 @@ const stopRecording = useCallback(() => {
 
     // last step: validate all questions, then send all answers to API
     const handleFinishInterview = async () => {
+        setApiError(null);
+        setRetryAction(null);
+
         try {
             setLoading(true);
 
@@ -313,7 +329,6 @@ const stopRecording = useCallback(() => {
                 }
             }
 
-            // 👇 ADD THIS BLOCK HERE
             // find first question which has no answer entry
             const unanswered = questions.findIndex((_, index) => {
                 return !finalAnswers.some(
@@ -336,7 +351,7 @@ const stopRecording = useCallback(() => {
                 return;
             }
 
-            // 👇 API CALL SHOULD COME AFTER THE VALIDATION
+            // API CALL SHOULD COME AFTER THE VALIDATION
             const response = await fetch(
                 `${BASE_URL}/api/clients/${clientId}/interviews/${interview_id}/submit-all-answers`,
                 {
@@ -350,11 +365,17 @@ const stopRecording = useCallback(() => {
                 }
             );
 
+            // Preserve the existing session-expiry flow for unauthorized requests.
+            if (response.status === 401) {
+                window.dispatchEvent(new Event("session-expired"));
+                return;
+            }
+
             const data = await response.json();
 
-            // pick the most specific error message from backend
+            // Prefer specific backend validation details before the shared status message.
             if (!response.ok) {
-                let errorMessage = "Submission failed";
+                let errorMessage = "";
 
                 if (data?.detail?.validation_errors?.length) {
                     errorMessage = data.detail.validation_errors.join("\n");
@@ -366,7 +387,18 @@ const stopRecording = useCallback(() => {
                     errorMessage = data.message;
                 }
 
-                throw new Error(errorMessage);
+                setApiError({
+                    title: "Unable to Submit Interview",
+                    message: errorMessage || getApiErrorMessage(
+                        { response: { status: response.status } },
+                        "Submission failed. Please try again."
+                    ),
+                });
+
+                // Retry the same interview submission.
+                setRetryAction(() => handleFinishInterview);
+
+                return;
             }
 
             // success -> go to feedback page with scorecard
@@ -378,17 +410,28 @@ const stopRecording = useCallback(() => {
                 },
             });
         } catch (err) {
-            // any error (network / API) shows in popup
-            setPopup({
-                show: true,
-                type: "error",
-                message: err.message,
+            if (err.response?.status === 401) {
+                window.dispatchEvent(new Event("session-expired"));
+                return;
+            }
+
+            // Network and unexpected errors use the shared API error handler.
+            setApiError({
+                title: "Unable to Submit Interview",
+                message: getApiErrorMessage(
+                    err,
+                    "Failed to submit the interview. Please try again."
+                ),
             });
+
+            // Retry the same interview submission.
+            setRetryAction(() => handleFinishInterview);
         } finally {
             // loader always stops
             setLoading(false);
         }
     };
+
     return (
         <div className="bg-white min-h-screen">
             {/*loader*/}
@@ -413,7 +456,9 @@ const stopRecording = useCallback(() => {
                     >
                         Scheduled Interviews
                     </span>
+
                     <span>›</span>
+
                     <span
                         onClick={() =>
                             navigate("/scheduled-interview-mode", {
@@ -435,13 +480,12 @@ const stopRecording = useCallback(() => {
                     </span>
                 </div>
             </div>
+
             <div className="border border-gray-300 p-4 mb-6">
                 {/* Question Stepper */}
                 <div className="px-4 sm:px-6 lg:px-12 mt-6">
                     <div className="bg-white border border-[#e7dbd6] rounded-xl px-5 py-4 shadow-sm">
-
                         <div className="flex items-center">
-
                             {/* Previous */}
                             <button
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-[#6b5f5b] hover:bg-gray-100 transition cursor-pointer"
@@ -451,7 +495,6 @@ const stopRecording = useCallback(() => {
 
                             {/* Steps */}
                             <div className="flex-1 flex items-center px-3">
-
                                 {/* one button per question, colour based on attempted_status */}
                                 {questions?.map((_, index) => (
                                     <div
@@ -479,6 +522,7 @@ const stopRecording = useCallback(() => {
                                             `}
                                         >
                                             {index + 1}
+
                                             {/* tick badge for completed */}
                                             {questions[index]?.attempted_status === "completed" && (
                                                 <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white border-2 border-[#3b6934] flex items-center justify-center shadow-sm">
@@ -506,7 +550,6 @@ const stopRecording = useCallback(() => {
                                         )}
                                     </div>
                                 ))}
-
                             </div>
 
                             {/* Next */}
@@ -515,11 +558,10 @@ const stopRecording = useCallback(() => {
                             >
                                 &#8250;
                             </button>
-
                         </div>
-
                     </div>
                 </div>
+
                 {/* Main Content */}
                 <div className="p-4 sm:p-6 lg:p-8 xl:p-12">
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
@@ -527,7 +569,6 @@ const stopRecording = useCallback(() => {
                         <div className="xl:col-span-7">
                             {/* Interview Card */}
                             <div className="bg-white border border-[#d5c2bf] rounded-xl shadow-sm min-h-162.5 flex flex-col items-center justify-center relative overflow-hidden">
-
                                 {/* Avatar */}
                                 <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-xl border-4 border-[#bcf1ad] p-1 bg-white">
                                     <img
@@ -648,7 +689,6 @@ const stopRecording = useCallback(() => {
                         {/* RIGHT SECTION */}
                         <div className="xl:col-span-5">
                             <div className="bg-white border border-[#d5c2bf] rounded-xl shadow-sm h-162.5 flex flex-col p-6">
-
                                 {/* Header */}
                                 <div className="flex items-center gap-3 mb-6">
                                     <span className="w-2 h-2 rounded-full bg-[#3b6934] animate-pulse"></span>
@@ -660,7 +700,6 @@ const stopRecording = useCallback(() => {
 
                                 {/* Scroll Area */}
                                 <div className="flex-1 overflow-y-auto pr-2">
-
                                     {/* AI Prompt */}
                                     <div className="bg-[#f1f4f9] border-l-4 border-[#3b6934] p-4 mb-8">
                                         <p className="italic text-[#514441] text-[16px] leading-8">
@@ -688,11 +727,11 @@ const stopRecording = useCallback(() => {
                     </div>
                 </div>
             </div>
-            {/* popup for errors / validation messages */}
+
+            {/* popup for validation messages */}
             {popup.show && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
                     <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
-
                         <p
                             className={`text-lg font-semibold mb-4 ${popup.type === "success"
                                 ? "text-green-700"
@@ -714,10 +753,20 @@ const stopRecording = useCallback(() => {
                         >
                             OK
                         </button>
-
                     </div>
                 </div>
             )}
+
+            {/* Shared API error modal; existing interview UI remains behind it. */}
+            <ApiErrorModal
+                title={apiError?.title || "Something Went Wrong"}
+                message={apiError?.message}
+                onClose={() => {
+                    setApiError(null);
+                    setRetryAction(null);
+                }}
+                onRetry={retryAction || undefined}
+            />
         </div >
     );
 }

@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 import axios from "axios";
 import BASE_URL from "../config/api";
+import {
+  clearAuthSession,
+  createAuthSession,
+} from "../services/authSession";
 
 function Login() {
   const [showPopup, setShowPopup] = useState(false);
@@ -88,46 +92,36 @@ function Login() {
       const formattedRole =
         typeof role === "string" ? role.toLowerCase().trim() : "";
 
-
-      // Allow only client accounts to proceed with login.
+      // Validate the authentication response before creating a session.
       if (!accessToken || formattedRole !== "client") {
-        // Clear authentication data when the response is invalid or the role is not allowed.
-        localStorage.removeItem("token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("client_id");
-        localStorage.removeItem("user_id");
-        localStorage.removeItem("employee_id");
+        clearAuthSession();
 
         setErrorMessage(
           !accessToken
             ? "Login response is missing the access token."
-            : formattedRole !== "client"
-              ? "Only client accounts can log in here."
-              : "Login response is missing required authentication data."
+            : "Only client accounts can log in here."
         );
 
         setInvalidPopup(true);
         return;
       }
-      // Clear previous authentication data after validating the response.
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("client_id");
-      localStorage.removeItem("user_id");
-      localStorage.removeItem("employee_id");
+      // Create the authentication session for the current browser tab.
+      try {
+        createAuthSession({
+          accessToken,
+          refreshToken,
+          role: formattedRole,
+          clientId: client_id,
+        });
+      } catch {
+        clearAuthSession();
 
-      // Store the new authentication data.
-      localStorage.setItem("token", accessToken);
-      localStorage.setItem("role", formattedRole);
+        setErrorMessage(
+          "Unable to establish a secure login session. Please try again."
+        );
 
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken);
-      }
-
-      if (client_id != null) {
-        localStorage.setItem("client_id", String(client_id));
+        setInvalidPopup(true);
+        return;
       }
 
       // Navigate after storing

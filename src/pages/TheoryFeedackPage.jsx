@@ -4,10 +4,10 @@ import {
     CheckCircle,
     TrendingUp,
     Lightbulb,
+    Check,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Check } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 
 function TheoryFeedbackPage() {

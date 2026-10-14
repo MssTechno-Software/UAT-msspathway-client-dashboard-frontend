@@ -2,6 +2,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import BASE_URL from "../config/api";
+import {
+  clearAuthSession,
+  getAccessToken,
+} from "../services/authSession";
 
 // Define sidebar menu items and the routes associated with each section.
 const menuItems = [
@@ -69,13 +73,14 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
     );
   };
 
-  const handleLogout = async () => {
-    try {
-      // Retrieve the authentication token for the logout request.
-      const token = localStorage.getItem("token");
+const handleLogout = async () => {
+  try {
+    // Read the access token from the current tab's session.
+    const token = getAccessToken();
 
-      // Notify the backend that the current user is logging out.
-      const response = await axios.post(
+    // Notify the backend when an authenticated session exists.
+    if (token) {
+      await axios.post(
         `${BASE_URL}/auth/logout`,
         null,
         {
@@ -85,28 +90,17 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
           },
         }
       );
-
-      console.log("Logout Success:", response.data);
-    } catch (error) {
-      // Log the API error if the logout request fails.
-      console.error(
-        "Logout Error:",
-        error.response?.data || error.message
-      );
-    } finally {
-      // Clear the stored authentication and user details after logout.
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("client_id");
-      localStorage.removeItem("user_id");
-      localStorage.removeItem("employee_id");
-      localStorage.removeItem("role");
-
-      // Redirect the user to the login page.
-      navigate("/login");
     }
-  };
+  } catch {
+    // Continue local logout even if the backend request fails.
+  } finally {
+    // Clear authentication data and legacy storage keys.
+    clearAuthSession();
 
+    // Redirect to login and replace the current history entry.
+    navigate("/login", { replace: true });
+  }
+};
   return (
     <aside
       className={`

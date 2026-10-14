@@ -1,18 +1,20 @@
 import { useLocation } from "react-router-dom";
-import {  Clock3, ShieldCheck, CircleCheck, Info, } from "lucide-react";
+import { Clock3, ShieldCheck, CircleCheck, Info } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../config/api";
+import { getClientId } from "../services/authSession";
+import { getApiErrorMessage } from "../utils/apiErrorHandler";
+import ApiErrorModal from "../components/ApiErrorModal";
 
 function ScheduledInterviewMode() {
     const { state } = useLocation();
     const interview = state?.interview;
     const preStartData = state?.preStartData;
     const interviewType = preStartData?.interview_type || "";
-    const pageTitle = interviewType.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-    // const pageTitle = preStartData?.page_title?.trim() || "Interview";
+    const pageTitle = interviewType.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());    // const pageTitle = preStartData?.page_title?.trim() || "Interview";
     const isCompanyInterview = interviewType === "company_based";
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -21,13 +23,11 @@ function ScheduledInterviewMode() {
         message: "",
         type: "", // success | error
     });
-    const clientId =
-        state?.client_id ??
-        localStorage.getItem("client_id");
-
+    const [apiError, setApiError] = useState(null);
+    const [retryAction, setRetryAction] = useState(null);
+    const clientId = state?.client_id ?? getClientId();
     const activeAssessmentMode =
         preStartData?.assessment_mode?.label || "--";
-
     const activeDuration =
         preStartData?.duration?.label || "--";
     //resume
@@ -38,17 +38,17 @@ function ScheduledInterviewMode() {
         preStartData?.question_focus_areas || [];
 
     /*start interview*/
-    console.log({ clientId, interviewId: interview.interview_id });
     const handleStartInterview = async () => {
+        setApiError(null);
+        setRetryAction(null);
+
         try {
             setLoading(true);
-            console.log(clientId);
-            console.log(interview.interview_id);
+
             const response = await axios.post(
                 `${BASE_URL}/api/clients/${clientId}/interviews/${interview.interview_id}/generate-questions`
             );
 
-            console.log("Generate Questions Response:", response.data);
             navigate("/scheduled-ai-interview", {
                 state: {
                     ...response.data,
@@ -58,19 +58,22 @@ function ScheduledInterviewMode() {
                     interview,
                 },
             });
-
         } catch (err) {
-            console.error(err);
+            if (err.response?.status === 401) {
+                window.dispatchEvent(new Event("session-expired"));
+                return;
+            }
 
-            setPopup({
-                show: true,
-                type: "error",
-                message:
-                    err?.response?.data?.message ||
-                    err?.response?.data?.error ||
-                    err?.response?.data?.detail ||
-                    "Failed to start the interview. Please try again.",
+            setApiError({
+                title: "Unable to Start Interview",
+                message: getApiErrorMessage(
+                    err,
+                    "Failed to start the interview. Please try again."
+                ),
             });
+
+            // Retry the same interview request.
+            setRetryAction(() => handleStartInterview);
         } finally {
             setLoading(false);
         }
@@ -83,7 +86,6 @@ function ScheduledInterviewMode() {
                 <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
                     <div className="p-6 flex flex-col items-center gap-3">
                         <FiLoader className="animate-spin text-4xl text-green-800" />
-
                         <p className="text-gray-800 font-medium">
                             Please wait...
                         </p>
@@ -95,7 +97,6 @@ function ScheduledInterviewMode() {
                 {/* Breadcrumb */}
                 <div className="h-auto min-h-16 border-b border-[#d5c2bf] flex items-center px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 mb-10">
                     <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-bold uppercase text-[#514441]">
-
                         <span
                             onClick={() => navigate("/scheduled-interview")}
                             className="cursor-pointer hover:text-[#3b6934]"
@@ -108,7 +109,6 @@ function ScheduledInterviewMode() {
                         <span className="text-[#3b6934]">
                             {pageTitle}
                         </span>
-
                     </div>
                 </div>
 
@@ -143,43 +143,51 @@ function ScheduledInterviewMode() {
                                             <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-2">
                                                 Assessment Mode
                                             </p>
+
                                             <div className="flex items-center gap-2">
                                                 <ShieldCheck className="w-5 h-5 text-[#154212]" />
+
                                                 <span className="text-base sm:text-lg md:text-xl lg:text-2xl break-word font-semibold break-word text-[#0b1c30]">
                                                     {activeAssessmentMode}
                                                 </span>
                                             </div>
                                         </div>
+
                                         {/* Duration */}
-                                        <div className="
-                                            bg-[#F8F9FD]
-                                            border
-                                            border-[#E5E7EB]
-                                            rounded-lg
-                                            p-4
-                                            sm:p-5
-                                            min-h-30
-                                            flex
-                                            flex-col
-                                            justify-center
-                                        "
+                                        <div
+                                            className="
+                                                bg-[#F8F9FD]
+                                                border
+                                                border-[#E5E7EB]
+                                                rounded-lg
+                                                p-4
+                                                sm:p-5
+                                                min-h-30
+                                                flex
+                                                flex-col
+                                                justify-center
+                                            "
                                         >
                                             <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-2">
                                                 Duration
                                             </p>
+
                                             <div className="flex items-center gap-2">
                                                 <Clock3 className="w-5 h-5 text-[#154212]" />
+
                                                 <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold break-word text-[#0b1c30]">
                                                     {activeDuration}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
+
                                     {/* Right */}
                                     <div className="bg-[#F3F5F8] border border-[#E5E7EB] rounded-lg p-6 h-full">
                                         <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-6">
                                             Question Focus Areas
                                         </p>
+
                                         <div className="space-y-5">
                                             {focusAreas.map((area, index) => (
                                                 <div
@@ -210,6 +218,7 @@ function ScheduledInterviewMode() {
                                     <p className="text-[14px] leading-5 font-normal text-[#514441] italic mb-6">
                                         {preStartData?.consent_text}
                                     </p>
+
                                     <button
                                         onClick={handleStartInterview}
                                         className="bg-[#2d5a27] text-white px-16 py-3 rounded-lg text-[24px] leading-8 font-semibold shadow-lg hover:brightness-110 active:scale-95 transition-all w-full md:w-auto min-w-[320px] cursor-pointer"
@@ -221,7 +230,7 @@ function ScheduledInterviewMode() {
                         </div>
                     </>
                 ) : (
-                    // Resume-Based 
+                    // Resume-Based
                     <>
                         {/* Main Content */}
                         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
@@ -229,6 +238,7 @@ function ScheduledInterviewMode() {
                             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0b1c30] text-center mb-5">
                                 {pageTitle}
                             </h2>
+
                             {/* Main Card */}
                             <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 sm:p-6 lg:p-8 shadow-sm">
                                 <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] gap-6 lg:gap-8">
@@ -239,8 +249,10 @@ function ScheduledInterviewMode() {
                                             <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-2">
                                                 Assessment Mode
                                             </p>
+
                                             <div className="flex items-center gap-2">
                                                 <ShieldCheck className="w-5 h-5 text-[#154212]" />
+
                                                 <span className="text-base sm:text-lg md:text-xl lg:text-2xl break-word font-semibold break-word text-[#0b1c30]">
                                                     {activeAssessmentMode}
                                                 </span>
@@ -248,7 +260,8 @@ function ScheduledInterviewMode() {
                                         </div>
 
                                         {/* Duration */}
-                                        <div className="
+                                        <div
+                                            className="
                                                 bg-[#F8F9FD]
                                                 border
                                                 border-[#E5E7EB]
@@ -259,12 +272,15 @@ function ScheduledInterviewMode() {
                                                 flex
                                                 flex-col
                                                 justify-center
-                                            ">
+                                            "
+                                        >
                                             <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-2">
                                                 Duration
                                             </p>
+
                                             <div className="flex items-center gap-2">
                                                 <Clock3 className="w-5 h-5 text-[#154212]" />
+
                                                 <span className="text-base sm:text-lg md:text-xl lg:text-2xl break-word font-semibold break-word text-[#0b1c30]">
                                                     {activeDuration}
                                                 </span>
@@ -273,27 +289,28 @@ function ScheduledInterviewMode() {
                                     </div>
 
                                     {/* Right */}
-                                    <div className="
-                                        bg-[#F3F5F8]
-                                        border
-                                        border-[#E5E7EB]
-                                        rounded-lg
-                                        p-5
-                                        sm:p-6
-                                        h-full
-                                    ">
+                                    <div
+                                        className="
+                                            bg-[#F3F5F8]
+                                            border
+                                            border-[#E5E7EB]
+                                            rounded-lg
+                                            p-5
+                                            sm:p-6
+                                            h-full
+                                        "
+                                    >
                                         <p className="text-xs uppercase tracking-wider font-semibold text-[#514441] mb-6">
                                             Question Focus Areas
                                         </p>
+
                                         <div className="space-y-5">
                                             {focusArea.map((area, index) => (
                                                 <div
                                                     key={index}
                                                     className="flex items-center gap-3"
                                                 >
-                                                    <CircleCheck
-                                                        className="w-5 h-5 text-[#154212] shrink-0"
-                                                    />
+                                                    <CircleCheck className="w-5 h-5 text-[#154212] shrink-0" />
 
                                                     <p className="text-lg font-semibold text-[#0b1c30]">
                                                         {area}
@@ -303,6 +320,7 @@ function ScheduledInterviewMode() {
                                         </div>
                                     </div>
                                 </div>
+
                                 {/* Info */}
                                 <div className="mt-6 pt-6 border-t border-[#E5E7EB] flex gap-3 items-start">
                                     <span className="p-1 rounded-full bg-[#ffdad6] text-[#ba1a1a]">
@@ -321,6 +339,7 @@ function ScheduledInterviewMode() {
                                     <p className="text-[14px] leading-5 font-normal text-[#514441] italic mb-6">
                                         {preStartData?.consent_text}
                                     </p>
+
                                     <button
                                         onClick={handleStartInterview}
                                         className="bg-[#2d5a27] text-white px-16 py-3 rounded-lg text-[24px] leading-8 font-semibold shadow-lg hover:brightness-110 active:scale-95 transition-all w-full md:w-auto min-w-[320px] cursor-pointer"
@@ -333,16 +352,17 @@ function ScheduledInterviewMode() {
                     </>
                 )}
             </div>
+
             {/* Popup */}
             {popup.show && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
                     <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
-
                         <p
-                            className={`text-lg font-semibold mb-4 ${popup.type === "success"
-                                ? "text-green-700"
-                                : "text-red-600"
-                                }`}
+                            className={`text-lg font-semibold mb-4 ${
+                                popup.type === "success"
+                                    ? "text-green-700"
+                                    : "text-red-600"
+                            }`}
                         >
                             {popup.message}
                         </p>
@@ -359,11 +379,22 @@ function ScheduledInterviewMode() {
                         >
                             OK
                         </button>
-
                     </div>
                 </div>
             )}
+
+            {/* Shared API error modal */}
+            <ApiErrorModal
+                title={apiError?.title || "Something Went Wrong"}
+                message={apiError?.message}
+                onClose={() => {
+                    setApiError(null);
+                    setRetryAction(null);
+                }}
+                onRetry={retryAction || undefined}
+            />
         </div>
     );
 }
+
 export default ScheduledInterviewMode;

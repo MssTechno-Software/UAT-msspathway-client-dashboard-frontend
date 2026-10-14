@@ -1,24 +1,20 @@
 import { Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {
+  clearAuthSession,
+  getAccessToken,
+  getUserRole,
+} from "../services/authSession";
 
 function ProtectedRoute({ children, allowedRoles }) {
-  // Retrieve the authentication token and user role from local storage.
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
+  // Read authentication details from the current tab's session.
+  const token = getAccessToken();
+  const role = getUserRole();
 
   // Track whether the current session has expired.
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const navigate = useNavigate();
-
-  // Clear only authentication-related session data.
-  const clearAuthSession = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("client_id");
-  };
-
   useEffect(() => {
     // Skip token validation when no token is available.
     if (!token) return;
@@ -26,7 +22,7 @@ function ProtectedRoute({ children, allowedRoles }) {
     let cancelled = false;
     let timeoutId;
 
-    const expireSession = () => {
+     const expireSession = () => {
       if (cancelled) return;
 
       clearAuthSession();
@@ -83,7 +79,6 @@ function ProtectedRoute({ children, allowedRoles }) {
         checkExpiry();
       } catch {
         // Handle invalid tokens by clearing authentication data.
-        console.log("Invalid token");
         expireSession();
       }
     });
@@ -122,7 +117,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   // Redirect users whose role is not included in the allowed roles.
   if (
     !sessionExpired &&
-    allowedRoles &&
+     allowedRoles &&
     !allowedRoles.includes(role)
   ) {
     return <Navigate to="/login" replace />;
@@ -130,7 +125,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   return (
     <>
-      {children}
+      {!sessionExpired && children}
 
       {/* Display the session-expired popup when the session becomes invalid. */}
       {sessionExpired && (

@@ -1,10 +1,18 @@
-
 import axios from "axios";
 
 let sessionHandled = false;
 
 axios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const requestUrl = response.config?.url || "";
+
+    // Reset the flag after a successful login.
+    if (requestUrl.includes("/auth/login")) {
+      sessionHandled = false;
+    }
+
+    return response;
+  },
   (error) => {
     const status = error.response?.status;
     const requestUrl = error.config?.url || "";

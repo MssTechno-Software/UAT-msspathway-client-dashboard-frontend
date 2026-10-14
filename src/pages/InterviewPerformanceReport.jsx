@@ -23,7 +23,6 @@ export default function InterviewPerformanceReport() {
     const navigate = useNavigate();
     const location = useLocation();
     const scorecard = location.state?.scorecard;
-    console.log("Scorecard:", scorecard);
     const from = location.state?.from;
     // View state: 'overall' or 'question'
     const [viewMode, setViewMode] = useState('overall');

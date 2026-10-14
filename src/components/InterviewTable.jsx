@@ -3,60 +3,73 @@ import { useNavigate } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
 import axios from "axios";
 import BASE_URL from "../config/api";
+import { getClientId, getAccessToken } from "../services/authSession";
+import { getApiErrorMessage } from "../utils/apiErrorHandler";
+import ApiErrorModal from "../components/ApiErrorModal";
 
 function InterviewTable({ interviews = [] }) {
   // Track the loading state while fetching interview insights.
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  // Retrieve the client ID and authentication token from local storage.
-  const clientId = localStorage.getItem("client_id");
-  const token = localStorage.getItem("token");
-  // Initialize popup-related state for displaying request errors.
-  const [ setPopup] = useState({
-    show: false,
-    message: "",
-    type: "", 
-  });
+
+  // Retrieve the client ID and authentication token from the current session.
+  const clientId = getClientId();
+  const token = getAccessToken();
+
+  // Shared API error handling.
+  const [apiError, setApiError] = useState(null);
+  const [retryAction, setRetryAction] = useState(null);
+
   const handleViewInsights = async (scorecardId) => {
+    setApiError(null);
+    setRetryAction(null);
+
     try {
-      console.log("Scorecard ID:", scorecardId);
       // Display the loader before starting the API request.
       setLoading(true);
+
       // Fetch the selected interview's scorecard using the client ID and scorecard ID.
       const response = await axios.get(
         `${BASE_URL}/api/clients/${clientId}/scorecards/${scorecardId}`,
         {
           // Pass the authentication token to authorize the request.
-           headers: {
+          headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      console.log("API Response:", response.data);
+
       // Navigate to the performance report and pass the fetched scorecard data.
       navigate("/Interview-Performance-Report", {
         state: {
           scorecard: response.data.scorecard,
-          from: "dashboard"
+          from: "dashboard",
         },
       });
     } catch (error) {
-      // Log the error if the scorecard request or navigation flow fails.
-      console.error(error);
-      // Prepare an error message using the API response or a fallback message.
-      setPopup({
-        show: true,
-        type: "error",
-        message:
-          error.response?.data?.message ||
-          "Failed to load interview report.",
+      // Preserve the existing session-expiry flow.
+      if (error.response?.status === 401) {
+        window.dispatchEvent(new Event("session-expired"));
+        return;
+      }
+
+      // Display API errors through the shared error handler and modal.
+      setApiError({
+        title: "Unable to Load Interview Report",
+        message: getApiErrorMessage(
+          error,
+          "Failed to load interview report. Please try again."
+        ),
       });
+
+      // Retry the same scorecard request.
+      setRetryAction(() => () => handleViewInsights(scorecardId));
     } finally {
       // Stop the loader regardless of whether the request succeeds or fails.
       setLoading(false);
     }
   };
-  console.log("Interviews:", interviews);
+
   return (
     <div className="bg-white border border-[#dee2e6] shadow-sm overflow-hidden h-full flex flex-col">
       {/* Display a loading overlay while interview insights are being fetched. */}
@@ -70,6 +83,7 @@ function InterviewTable({ interviews = [] }) {
           </div>
         </div>
       )}
+
       <div className="px-6 py-5 border-b border-[#dee2e6] flex items-center gap-3">
         <div className="w-10 h-10 shrink-0 bg-green-50 rounded-lg flex items-center justify-center">
           <span className="material-symbols-outlined text-[#2d5a27]">
@@ -81,6 +95,7 @@ function InterviewTable({ interviews = [] }) {
           Recently Completed Interviews
         </h2>
       </div>
+
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
@@ -99,6 +114,7 @@ function InterviewTable({ interviews = [] }) {
               </th>
             </tr>
           </thead>
+
           <tbody>
             {/* Render interview records when data is available; otherwise show the empty state. */}
             {interviews.length > 0 ? (
@@ -119,15 +135,16 @@ function InterviewTable({ interviews = [] }) {
                     <span
                       className={`
                         px-3 py-1 text-xs font-bold border rounded-sm
-                       ${item.score >= 70
+                        ${item.score >= 70
                           ? "bg-green-50 text-[#2d5a27] border-green-200"
                           : "bg-red-50 text-red-700 border-red-200"
                         }
-                     `}
+                      `}
                     >
                       {item.score_display}
                     </span>
                   </td>
+
                   <td className="px-6 py-5 text-left">
                     <button
                       onClick={() => {
@@ -136,6 +153,7 @@ function InterviewTable({ interviews = [] }) {
                           item.insights_url.split("?")[1]
                         );
                         const scorecardId = params.get("scorecard_id");
+
                         // Fetch the selected scorecard and open its performance report.
                         handleViewInsights(scorecardId);
                       }}
@@ -170,6 +188,17 @@ function InterviewTable({ interviews = [] }) {
           </tbody>
         </table>
       </div>
+
+      {/* Shared API error modal */}
+      <ApiErrorModal
+        title={apiError?.title || "Something Went Wrong"}
+        message={apiError?.message}
+        onClose={() => {
+          setApiError(null);
+          setRetryAction(null);
+        }}
+        onRetry={retryAction || undefined}
+      />
     </div>
   );
 }

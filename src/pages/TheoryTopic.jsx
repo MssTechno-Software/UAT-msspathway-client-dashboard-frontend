@@ -2,29 +2,64 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiLoader } from "react-icons/fi";
 import BASE_URL from "../config/api";
+import { getClientId } from "../services/authSession";
+import { getApiErrorMessage } from "../utils/apiErrorHandler";
+import ApiErrorModal from "../components/ApiErrorModal";
 
 function TheoryTopic() {
     // Stores the available topics and the currently selected topic.
     const [topics, setTopics] = useState([]);
     const [selectedTopic, setSelectedTopic] = useState("");
     const [loading, setLoading] = useState(true);
+    const [apiError, setApiError] = useState(null);
+    const [retryCount, setRetryCount] = useState(0);
+
     const navigate = useNavigate();
-    const [popup, setPopup] = useState({
-        show: false,
-        message: "",
-        type: "", // success | error
-    });
-    const clientId = localStorage.getItem("client_id");
+
+    // Read the client ID from the current session.
+    const clientId = getClientId();
 
     // Loads active technologies for this client and selects the first one by default.
     useEffect(() => {
         let cancelled = false;
+        const controller = new AbortController();
 
         const loadTechnologies = async () => {
             try {
+                setLoading(true);
+                setApiError(null);
+
                 const response = await fetch(
-                    `${BASE_URL}/Topic_based/clients/${clientId}/technologies`
+                    `${BASE_URL}/Topic_based/clients/${clientId}/technologies`,
+                    {
+                        signal: controller.signal,
+                    }
                 );
+
+                if (cancelled) return;
+
+                // Preserve the existing session-expiry flow.
+                if (response.status === 401) {
+                    window.dispatchEvent(new Event("session-expired"));
+                    return;
+                }
+
+                // Handle HTTP errors through the common error handler.
+                if (!response.ok) {
+                    setApiError({
+                        title: "Unable to Load Technologies",
+                        message: getApiErrorMessage(
+                            { response: { status: response.status } },
+                            "Failed to load technologies. Please try again."
+                        ),
+                        onRetry: () => {
+                            setApiError(null);
+                            setRetryCount((previousCount) => previousCount + 1);
+                        },
+                    });
+
+                    return;
+                }
 
                 const data = await response.json();
 
@@ -50,17 +85,18 @@ function TheoryTopic() {
                     }
                 }
             } catch (error) {
-                if (cancelled) return;
+                if (cancelled || error.name === "AbortError") return;
 
-                console.error("Error fetching technologies:", error);
-
-                setPopup({
-                    show: true,
-                    message:
-                        error.message ||
-                        error.detail ||
-                        "Failed to load technologies",
-                    type: "error",
+                setApiError({
+                    title: "Unable to Load Technologies",
+                    message: getApiErrorMessage(
+                        error,
+                        "Failed to load technologies. Please check your connection and try again."
+                    ),
+                    onRetry: () => {
+                        setApiError(null);
+                        setRetryCount((previousCount) => previousCount + 1);
+                    },
                 });
             } finally {
                 if (!cancelled) {
@@ -73,8 +109,10 @@ function TheoryTopic() {
 
         return () => {
             cancelled = true;
+            controller.abort();
         };
-    }, [clientId]);
+    }, [clientId, retryCount]);
+
     // Opens the selected topic's sub-topic page on double-click.
     const handleTechnologyDoubleClick = (topic) => {
         navigate("/sub-topic", {
@@ -93,6 +131,7 @@ function TheoryTopic() {
                 <div className="fixed inset-0 bg-black/40 z-9999 flex items-center justify-center">
                     <div className="p-6 flex flex-col items-center gap-3">
                         <FiLoader className="animate-spin text-4xl text-green-800" />
+
                         <p className="text-gray-800 font-medium">
                             Please wait...
                         </p>
@@ -109,7 +148,9 @@ function TheoryTopic() {
                     >
                         Interview Modes
                     </span>
+
                     <span>›</span>
+
                     <span>Technologies</span>
                 </div>
             </div>
@@ -121,6 +162,7 @@ function TheoryTopic() {
                     <h1 className="text-[32px] font-semibold text-[#0B1C30] mb-2">
                         Select Theory Topic
                     </h1>
+
                     <p className="text-[18px] text-[#514441]">
                         Choose your area of specialized expertise to begin the assessment.
                     </p>
@@ -131,12 +173,17 @@ function TheoryTopic() {
                     {topics.map((topic) => (
                         <div
                             key={topic.technology_id}
-                            onClick={() => setSelectedTopic(topic.technology_name)}
-                            onDoubleClick={() => handleTechnologyDoubleClick(topic)}
+                            onClick={() =>
+                                setSelectedTopic(topic.technology_name)
+                            }
+                            onDoubleClick={() =>
+                                handleTechnologyDoubleClick(topic)
+                            }
                             className={`relative bg-white rounded-lg p-6 cursor-pointer transition-all duration-300 hover:-translate-y-2 shadow-md
-                                ${selectedTopic === topic.technology_name
-                                    ? "border-2 border-[#3B6934]"
-                                    : "border border-gray-200"
+                                ${
+                                    selectedTopic === topic.technology_name
+                                        ? "border-2 border-[#3B6934]"
+                                        : "border border-gray-200"
                                 }`}
                         >
                             {selectedTopic === topic.technology_name && (
@@ -155,9 +202,10 @@ function TheoryTopic() {
 
                             <div
                                 className={`w-12 h-12 rounded-md flex items-center justify-center mb-4
-                                    ${selectedTopic === topic.technology_name
-                                        ? "bg-[#BCF1AD]"
-                                        : "bg-[#EEF4FF]"
+                                    ${
+                                        selectedTopic === topic.technology_name
+                                            ? "bg-[#BCF1AD]"
+                                            : "bg-[#EEF4FF]"
                                     }`}
                             >
                                 <img
@@ -170,6 +218,7 @@ function TheoryTopic() {
                             <h3 className="text-lg font-semibold text-[#0B1C30] mb-2">
                                 {topic.technology_name}
                             </h3>
+
                             <p className="text-sm text-[#514441] leading-relaxed">
                                 {topic.technology_description}
                             </p>
@@ -178,35 +227,13 @@ function TheoryTopic() {
                 </div>
             </div>
 
-            {/* Popup for displaying success or error messages */}
-            {popup.show && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-2">
-                    <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
-                        <p
-                            className={`text-lg font-semibold mb-4
-                                ${popup.type === "success"
-                                    ? "text-green-800"
-                                    : "text-red-600"
-                                }
-                                `}
-                        >
-                            {popup.message}
-                        </p>
-                        <button
-                            onClick={() =>
-                                setPopup({
-                                    show: false,
-                                    message: "",
-                                    type: "",
-                                })
-                            }
-                            className="px-4 py-2 bg-green-800 text-white rounded-full hover:bg-green-700 cursor-pointer"
-                        >
-                            OK
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Common API error modal */}
+            <ApiErrorModal
+                title={apiError?.title}
+                message={apiError?.message}
+                onRetry={apiError?.onRetry}
+                onClose={() => setApiError(null)}
+            />
         </div>
     );
 }
