@@ -156,8 +156,9 @@ function TheoryTopic() {
             </div>
 
             {/* Main topic selection content */}
+
+            {/* Main topic selection content */}
             <div className="p-4 sm:p-6 lg:p-8 xl:p-12">
-                {/* Page heading and description */}
                 <div className="mb-10">
                     <h1 className="text-[32px] font-semibold text-[#0B1C30] mb-2">
                         Select Theory Topic
@@ -168,65 +169,95 @@ function TheoryTopic() {
                     </p>
                 </div>
 
-                {/* Displays available topics as selectable cards */}
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {topics.map((topic) => (
-                        <div
-                            key={topic.technology_id}
-                            onClick={() =>
-                                setSelectedTopic(topic.technology_name)
-                            }
-                            onDoubleClick={() =>
-                                handleTechnologyDoubleClick(topic)
-                            }
-                            className={`relative bg-white rounded-lg p-6 cursor-pointer transition-all duration-300 hover:-translate-y-2 shadow-md
-                                ${
-                                    selectedTopic === topic.technology_name
-                                        ? "border-2 border-[#3B6934]"
-                                        : "border border-gray-200"
-                                }`}
-                        >
-                            {selectedTopic === topic.technology_name && (
-                                <div className="absolute top-4 right-4 text-[#3B6934]">
-                                    <span
-                                        className="material-symbols-outlined"
-                                        style={{
-                                            fontVariationSettings: "'FILL' 1",
-                                            fontSize: "22px",
-                                        }}
-                                    >
-                                        check_circle
-                                    </span>
-                                </div>
-                            )}
+                {topics.length === 0 && !loading ? (
+                    <div className="flex items-center justify-center min-h-[420px]">
+                        <div className="max-w-md w-full text-center px-6 py-12">
 
-                            <div
-                                className={`w-12 h-12 rounded-md flex items-center justify-center mb-4
-                                    ${
-                                        selectedTopic === topic.technology_name
-                                            ? "bg-[#BCF1AD]"
-                                            : "bg-[#EEF4FF]"
-                                    }`}
-                            >
-                                <img
-                                    src={topic.icon}
-                                    alt={topic.technology_name}
-                                    className="w-7 h-7"
-                                />
+                            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-gray-400 text-4xl">
+                                    library_books
+                                </span>
                             </div>
 
-                            <h3 className="text-lg font-semibold text-[#0B1C30] mb-2">
-                                {topic.technology_name}
-                            </h3>
+                            <h2 className="text-2xl font-semibold text-[#0B1C30] mb-3">
+                                No Technologies Available
+                            </h2>
 
-                            <p className="text-sm text-[#514441] leading-relaxed">
-                                {topic.technology_description}
+                            <p className="text-sm text-gray-500 leading-6 mb-2">
+                                There are no active technologies available at the moment.
                             </p>
-                        </div>
-                    ))}
-                </div>
-            </div>
 
+                            <p className="text-sm text-gray-400 leading-6 mb-7">
+                                Please contact your administrator to add or activate technologies.
+                            </p>
+
+                            <button
+                                onClick={() => {
+                                    setApiError(null);
+                                    setRetryCount((prev) => prev + 1);
+                                }}
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#3B6934] text-white text-sm font-medium hover:bg-[#2f5729] transition-all duration-200"
+                            >
+                                <span className="material-symbols-outlined text-lg">
+                                    refresh
+                                </span>
+                                Refresh Technologies
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {topics.map((topic) => (
+                            <div
+                                key={topic.technology_id}
+                                onClick={() => setSelectedTopic(topic.technology_name)}
+                                onDoubleClick={() => handleTechnologyDoubleClick(topic)}
+                                className={`relative bg-white rounded-lg p-6 cursor-pointer transition-all duration-300 hover:-translate-y-2 shadow-md
+                        ${selectedTopic === topic.technology_name
+                                        ? "border-2 border-[#3B6934]"
+                                        : "border border-gray-200"
+                                    }`}
+                            >
+                                {selectedTopic === topic.technology_name && (
+                                    <div className="absolute top-4 right-4 text-[#3B6934]">
+                                        <span
+                                            className="material-symbols-outlined"
+                                            style={{
+                                                fontVariationSettings: "'FILL' 1",
+                                                fontSize: "22px",
+                                            }}
+                                        >
+                                            check_circle
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div
+                                    className={`w-12 h-12 rounded-md flex items-center justify-center mb-4
+                            ${selectedTopic === topic.technology_name
+                                            ? "bg-[#BCF1AD]"
+                                            : "bg-[#EEF4FF]"
+                                        }`}
+                                >
+                                    <img
+                                        src={topic.icon}
+                                        alt={topic.technology_name}
+                                        className="w-7 h-7"
+                                    />
+                                </div>
+
+                                <h3 className="text-lg font-semibold text-[#0B1C30] mb-2">
+                                    {topic.technology_name}
+                                </h3>
+
+                                <p className="text-sm text-[#514441] leading-relaxed">
+                                    {topic.technology_description}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             {/* Common API error modal */}
             <ApiErrorModal
                 title={apiError?.title}
