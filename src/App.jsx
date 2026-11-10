@@ -5,6 +5,9 @@ const AppLayout = lazy(() => import("./pages/AppLayout"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Applications = lazy(() => import("./pages/Applications"));
+const Overview = lazy(() => import("./pages/Overview"));
 const InterviewMode = lazy(() => import("./pages/InterviewMode"));
 const SelfIntroductionQuestion = lazy(() => import("./pages/SelfIntroductionQuestion"));
 const FeedbackPage = lazy(() => import("./pages/FeedbackPage"));
@@ -43,6 +46,28 @@ function App() {
             <Route path="/scheduled-Interview-feedback" element={<ProtectedRoute allowedRoles={["client"]}><ScheduledInterviewFeedback /></ProtectedRoute>} />
             <Route path="/scorecards" element={<ProtectedRoute allowedRoles={["client"]}><ScoreCardPage /></ProtectedRoute>} />
             <Route path="/Interview-Performance-Report" element={<ProtectedRoute allowedRoles={["client"]}><InterviewPerformanceReport /></ProtectedRoute>} />
+            <Route
+              path="/applications"
+              element={
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <Applications />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/reports" element={
+              <ProtectedRoute allowedRoles={["client"]}>
+                <Reports />
+              </ProtectedRoute>
+            }
+            />
+            <Route
+              path="/overview"
+              element={
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <Overview />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </Suspense>

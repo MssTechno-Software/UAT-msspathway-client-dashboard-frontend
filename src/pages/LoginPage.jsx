@@ -123,13 +123,12 @@ function Login() {
         setInvalidPopup(true);
         return;
       }
-
       // Navigate after storing
       setPageLoading(true);
       setTimeout(() => {
         // Redirect according to the normalized role after a short loading delay.
         if (formattedRole === "client") {
-          navigate("/client-dashboard");
+          navigate("/client-dashboard", { replace: true });
         } else {
           navigate("/login");
         }

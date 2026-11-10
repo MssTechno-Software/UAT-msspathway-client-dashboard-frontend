@@ -6,7 +6,11 @@ import {
   clearAuthSession,
   getAccessToken,
 } from "../services/authSession";
-
+import {
+  FiBarChart2,
+  FiFileText,
+  FiGrid,
+} from "react-icons/fi";
 // Define sidebar menu items and the routes associated with each section.
 const menuItems = [
   {
@@ -56,6 +60,24 @@ const menuItems = [
       "/Interview-Performance-Report",
     ],
   },
+  {
+    icon: "applications",
+    label: "Applications",
+    path: "/applications",
+    routes: ["/applications"],
+  },
+  {
+    icon: "reports",
+    label: "Reports",
+    path: "/reports",
+    routes: ["/reports"],
+  },
+  {
+    icon: "overview",
+    label: "Overview",
+    path: "/overview",
+    routes: ["/overview"],
+  },
 ];
 
 function Sidebar({ openSidebar, setOpenSidebar }) {
@@ -73,34 +95,34 @@ function Sidebar({ openSidebar, setOpenSidebar }) {
     );
   };
 
-const handleLogout = async () => {
-  try {
-    // Read the access token from the current tab's session.
-    const token = getAccessToken();
+  const handleLogout = async () => {
+    try {
+      // Read the access token from the current tab's session.
+      const token = getAccessToken();
 
-    // Notify the backend when an authenticated session exists.
-    if (token) {
-      await axios.post(
-        `${BASE_URL}/auth/logout`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // Notify the backend when an authenticated session exists.
+      if (token) {
+        await axios.post(
+          `${BASE_URL}/auth/logout`,
+          null,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+    } catch {
+      // Continue local logout even if the backend request fails.
+    } finally {
+      // Clear authentication data and legacy storage keys.
+      clearAuthSession();
+
+      // Redirect to login and replace the current history entry.
+      navigate("/login", { replace: true });
     }
-  } catch {
-    // Continue local logout even if the backend request fails.
-  } finally {
-    // Clear authentication data and legacy storage keys.
-    clearAuthSession();
-
-    // Redirect to login and replace the current history entry.
-    navigate("/login", { replace: true });
-  }
-};
+  };
   return (
     <aside
       className={`
@@ -173,10 +195,29 @@ const handleLogout = async () => {
               `;
             }}
           >
-            <span className="material-symbols-outlined shrink-0 text-[24px] leading-none">
-              {item.icon}
-            </span>
-
+            {item.icon === "reports" ? (
+              <FiBarChart2
+                size={24}
+                className="w-6 h-6 shrink-0"
+                strokeWidth={2}
+              />
+            ) : item.icon === "applications" ? (
+              <FiFileText
+                size={24}
+                className="w-6 h-6 shrink-0"
+                strokeWidth={2}
+              />
+            ) : item.icon === "overview" ? (
+              <FiGrid
+                size={24}
+                className="w-6 h-6 shrink-0"
+                strokeWidth={2}
+              />
+            ) : (
+              <span className="material-symbols-outlined w-6 h-6 shrink-0 flex items-center justify-center text-[24px] leading-none">
+                {item.icon}
+              </span>
+            )}
             {openSidebar && <span>{item.label}</span>}
           </NavLink>
         ))}
